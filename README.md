@@ -29,7 +29,7 @@ Decision tree and capability matrix in [INSTALL_WINDOWS.md](INSTALL_WINDOWS.md).
 runs single-pass with explicit in-context self-critique instead of independent
 parallel sub-agents. Iron Rules still apply (no fabricated citations) but the
 integrity gate is mechanically weaker. Read
-[desktop-skills/deep-research/references/desktop_limitations.md](desktop-skills/deep-research/references/desktop_limitations.md)
+[desktop-skills/academic-deep-research/references/desktop_limitations.md](desktop-skills/academic-deep-research/references/desktop_limitations.md)
 before relying on Path C output for publication-grade work.
 
 ---
@@ -51,10 +51,12 @@ before relying on Path C output for publication-grade work.
 
 ### Skills (lite versions — used by Path C)
 
-- **`desktop-skills/deep-research`** — Same 7 modes, same Iron Rules, same templates,
-  but workflow is serial in one context with explicit
-  `=== DEVIL'S ADVOCATE CHECKPOINT N ===` self-critique banners. See
-  [desktop-skills/deep-research/SKILL.md](desktop-skills/deep-research/SKILL.md).
+- **`desktop-skills/academic-deep-research`** — Same 7 modes, same Iron Rules,
+  same templates, but workflow is serial in one context with explicit
+  `=== DEVIL'S ADVOCATE CHECKPOINT N ===` self-critique banners. The skill is
+  named `academic-deep-research` (not `deep-research`) to avoid colliding with
+  Claude Desktop's built-in deep-research feature. See
+  [desktop-skills/academic-deep-research/SKILL.md](desktop-skills/academic-deep-research/SKILL.md).
 - **`desktop-skills/paper-capture`** and **`desktop-skills/lit-status`** — Identical
   to the Code variants (no Agent tool dependency).
 - **`desktop-skills/capture-research-state`**, **`resume-research-state`**,

@@ -1,9 +1,9 @@
 ---
-name: deep-research
-description: Multi-mode academic research pipeline for Claude Desktop — runs literature discovery, synthesis, fact-checking, or systematic review against your literature MCP servers and lands findings in your Obsidian vault. Use whenever the user asks to "research", "look into the literature on", "find papers on", "fact-check", "do a lit review", "do a systematic review", or asks an open-ended scholarly question. Adapted from Imbad0202/academic-research-skills (CC-BY-NC 4.0). DESKTOP-LITE variant: runs single-pass without parallel sub-agents — see references/desktop_limitations.md for what that means for hallucination-resistance.
+name: academic-deep-research
+description: Multi-mode academic literature pipeline (citation-disciplined research, lit-review, fact-check, PRISMA systematic review, Socratic scoping) backed by external paper-source MCP servers (semantic-scholar, arxiv, paper-search, scihub, university-paper-access) and an Obsidian vault. Use whenever the user asks to "research", "look into the literature on", "find papers on", "fact-check a claim", "do a lit review", "do a systematic review", or asks an open-ended scholarly question that needs cited sources. Distinct from Claude's built-in research feature — this one always grounds in MCP-fetched papers and writes a draft to {vault}/00_Inbox/. Adapted from Imbad0202/academic-research-skills (CC-BY-NC 4.0). DESKTOP-LITE variant: runs single-pass without parallel sub-agents — see references/desktop_limitations.md for what that means for hallucination-resistance.
 ---
 
-# Deep Research (Desktop-lite)
+# Academic Deep Research (Desktop-lite)
 
 This is the Claude Desktop variant of the deep-research skill. The Code variant in
 `skills/deep-research/` spawns parallel context-isolated sub-agents (investigators,

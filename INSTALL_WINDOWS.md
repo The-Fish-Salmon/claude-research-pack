@@ -31,7 +31,7 @@ skill can't spawn parallel investigators or an independent devil's-advocate. The
 desktop variant runs single-pass and uses explicit in-context self-critique
 checkpoints. Iron Rules still apply (no fabricated citations) but the integrity
 gate is mechanically weaker. Read
-[desktop-skills/deep-research/references/desktop_limitations.md](desktop-skills/deep-research/references/desktop_limitations.md)
+[desktop-skills/academic-deep-research/references/desktop_limitations.md](desktop-skills/academic-deep-research/references/desktop_limitations.md)
 for what this means in practice.
 
 ---
@@ -331,9 +331,15 @@ What it does:
    `tools\research_sync_agent.py` into each continuity skill's `bin\` folder,
    then zips each subfolder under `desktop-skills\` into
    `dist-desktop\<name>.zip` — **seven zips total**:
-   `deep-research.zip`, `paper-capture.zip`, `lit-status.zip`,
+   `academic-deep-research.zip`, `paper-capture.zip`, `lit-status.zip`,
    `capture-research-state.zip`, `resume-research-state.zip`,
    `sync-check.zip`, `paper-map.zip`.
+
+   **Why `academic-deep-research` and not `deep-research`?** Claude Desktop
+   ships a built-in skill named `deep-research`. If our skill claimed the same
+   name the tool router falls back to the built-in and our skill never fires
+   (`Unknown skill: deep-research` in tool errors). The unique name forces
+   Desktop to invoke ours.
 3. If `OBSIDIAN_VAULT_PATH` is set in the current shell, runs
    `python tools\research_sync_agent.py init --vault $env:OBSIDIAN_VAULT_PATH`
    to scaffold the cross-device continuity folder `00-Claude-Context\` in the
@@ -380,13 +386,18 @@ Same Obsidian config as Path B (attachments folder, templates folder).
 
 In a new chat in Claude Desktop:
 
-1. *Discovery* — ask:
-   > Research ion-gated transistors for reservoir computing using deep-research,
-   > mode lit-review.
+1. *Discovery* — ask (free text — do NOT say "deep-research" by name, since
+   that's a built-in Desktop skill that will pre-empt ours):
+   > Do an academic literature review on ion-gated transistors for reservoir
+   > computing. Cite real papers from Semantic Scholar / arXiv.
 
-   Expected: the `deep-research` skill triggers, runs single-pass workflow with
-   explicit `=== DEVIL'S ADVOCATE CHECKPOINT N ===` banners, lands a draft note
-   in your vault `00_Inbox/`.
+   Expected: the `academic-deep-research` skill triggers, runs single-pass
+   workflow with explicit `=== DEVIL'S ADVOCATE CHECKPOINT N ===` banners, and
+   lands a draft note in your vault `00_Inbox/`.
+
+   Sanity check: every citation in the output must resolve through Semantic
+   Scholar or have a real DOI/arXiv id. If you see citations the model can't
+   point you at, the wrong skill (the built-in) fired — see Troubleshooting.
 
 2. *Capture* — in another chat, paste:
    > Save this paper: 10.1038/s41586-021-03819-2
@@ -510,6 +521,8 @@ If you genuinely want to retire old snapshots, do it manually with
 | Statusline shows `?` for everything | B | `statusline.ps1` couldn't find your memory dir. The script falls back automatically; confirm `%USERPROFILE%\.claude\projects\` exists. |
 | Captured papers don't show in `/lit-map` | A, B | `OBSIDIAN_VAULT_PATH` not visible to the Claude Code process. Path A: `echo $OBSIDIAN_VAULT_PATH` in the launching shell. Path B: open a fresh PowerShell after `setx` and verify `$env:OBSIDIAN_VAULT_PATH`. |
 | Desktop deep-research seems to skip checkpoints | C | The user has prompted aggressively for an answer. The model is supposed to hold the line; if you see this, screenshot and report — it's a regression in the lite skill. |
+| `<tool_use_error>Unknown skill: deep-research</tool_use_error>` and a fallback to Claude's built-in deep-research feature | C | Pre-fix v3 build that named the skill `deep-research`, which collides with Desktop's built-in. Fix: re-run `setup.ps1 -Mode Desktop` (which now names the folder + skill `academic-deep-research`), import the new `academic-deep-research.zip` from `dist-desktop\`, and remove the old `deep-research` skill from Desktop's Settings → Skills. Then phrase requests in free text (avoid the literal phrase "deep-research") so Desktop doesn't pre-empt with the built-in. |
+| `setup.ps1` warns "Obsidian not detected" but Obsidian IS installed | A, B, C | Pre-fix v3 build only checked `%LOCALAPPDATA%\Obsidian\Obsidian.exe`, but the per-user installer drops it under `%LOCALAPPDATA%\Programs\Obsidian\`. Cosmetic — the install proceeds. Fixed in current setup.ps1 which probes both per-user and Program Files paths. |
 | `sync-check` says "Not Ready — missing folder: …/00-Claude-Context" | C | The continuity folder hasn't been initialized. Run `python tools\research_sync_agent.py init --vault $env:OBSIDIAN_VAULT_PATH` (or re-run `setup.ps1 -Mode Desktop` after `setx OBSIDIAN_VAULT_PATH`). |
 | `capture-research-state` errors with `bin/research_sync_agent.py: not found` | C | The helper wasn't bundled into the imported skill. You're on a pre-fix v3 build. Re-run `setup.ps1 -Mode Desktop` (which now copies `tools\research_sync_agent.py` into each continuity skill's `bin\` before zipping), then re-import the four `.zip`s and restart Desktop. |
 | Two `session-snapshots/` files appear from the same minute | C | Concurrent snapshots from two devices. Expected — `resume-research-state` will surface both and ask which to use. Do not delete either. |
@@ -569,8 +582,8 @@ PS> Remove-Item -Recurse -Force $env:USERPROFILE\.claude\mcp-servers\Sci-Hub-MCP
 ### Path C (Desktop)
 
 1. Claude Desktop → Settings → Skills → remove all seven imported skills:
-   `deep-research`, `paper-capture`, `lit-status`, `capture-research-state`,
-   `resume-research-state`, `sync-check`, `paper-map`.
+   `academic-deep-research`, `paper-capture`, `lit-status`,
+   `capture-research-state`, `resume-research-state`, `sync-check`, `paper-map`.
 2. Edit `%APPDATA%\Claude\claude_desktop_config.json` to remove the pack's
    `mcpServers` entries.
 3. (Optional) Remove `%USERPROFILE%\.claude\mcp-servers\` if no other Claude
