@@ -1,4 +1,4 @@
-# Install on Windows — Claude Research Pack v2
+# Install on Windows — Claude Research Pack v3
 
 This pack supports **three install paths**. Pick one based on which Claude product
 you'll use.
@@ -16,7 +16,8 @@ you'll use.
 | **Hooks** (auto-handoff, todo persistence, statusline) | ✅ | ✅ | ❌ |
 | **Iron Rules + citation discipline** | ✅ | ✅ | ✅ |
 | **Paper capture into vault** | ✅ | ✅ | ✅ |
-| **Most-tested** | ✅ | new in v2 | new in v2 |
+| **Cross-device research continuity** (snapshot/resume via synced vault) | ❌ | ❌ | ✅ — v3 |
+| **Most-tested** | ✅ | new in v2 | new in v2 / v3 |
 | **Setup time** | 30–45 min | 30–45 min | 20–30 min |
 
 **Decision tree:**
@@ -81,8 +82,9 @@ What each piece does:
   starts but every call returns a connection error.
 - **`OBSIDIAN_API_KEY`** — the bearer token from the plugin's settings page.
   `mcp-obsidian` reads it from the inherited environment of the spawned process.
-- **`OBSIDIAN_VAULT_PATH`** — absolute path to the vault root. Used by the
-  `paper-capture` and `port-to-vault` skills to compute output paths
+- **`OBSIDIAN_VAULT_PATH`** — absolute path to the vault root. Used by
+  `paper-capture` (skill), `/port-to-vault` (Path A/B slash command), and the
+  v3 continuity skills to compute output paths
   (`{vault}/30_Literature/{citekey}.md`, etc.). Must point at the **same vault**
   that the Local REST API plugin is currently serving.
 
@@ -111,7 +113,7 @@ Clone or unzip into a working directory:
 
 ```powershell
 PS> cd C:\Users\<you>\
-PS> git clone <distribution-repo-url> claude-research-pack
+PS> git clone https://github.com/The-Fish-Salmon/claude-research-pack.git
 # or extract the zip into the same location
 ```
 
@@ -146,7 +148,7 @@ The next three sections cover what each mode does and what to do after.
 | **Claude Code CLI** | https://claude.ai/code → install for Windows or Linux |
 | **Node.js ≥ 20** (in WSL) | `curl -fsSL https://deb.nodesource.com/setup_20.x \| sudo -E bash - && sudo apt-get install -y nodejs` |
 | **git, jq, rsync, curl** (in WSL) | `sudo apt-get install -y git jq rsync curl` |
-| **Python 3.12** (in WSL) | `sudo apt-get install -y python3 python3-venv` |
+| **Python 3.10+** (in WSL; 3.12 preferred) | `sudo apt-get install -y python3 python3-venv` (Ubuntu 22.04 ships 3.10, 24.04 ships 3.12 — either works) |
 
 ### Path A install
 
@@ -325,16 +327,26 @@ What it does:
    - Same MCP server installs as Path B.
    - **But writes** `mcpServers` config into `%APPDATA%\Claude\claude_desktop_config.json`
      (Desktop's location) instead of `%USERPROFILE%\.claude.json`.
-2. Calls `scripts\prepare-desktop-pack.ps1`, which zips each subfolder under
-   `desktop-skills\` into `dist-desktop\<name>.zip` (one zip per skill —
-   `deep-research.zip`, `paper-capture.zip`, `lit-status.zip`).
+2. Calls `scripts\prepare-desktop-pack.ps1`, which copies the v3 helper
+   `tools\research_sync_agent.py` into each continuity skill's `bin\` folder,
+   then zips each subfolder under `desktop-skills\` into
+   `dist-desktop\<name>.zip` — **seven zips total**:
+   `deep-research.zip`, `paper-capture.zip`, `lit-status.zip`,
+   `capture-research-state.zip`, `resume-research-state.zip`,
+   `sync-check.zip`, `paper-map.zip`.
+3. If `OBSIDIAN_VAULT_PATH` is set in the current shell, runs
+   `python tools\research_sync_agent.py init --vault $env:OBSIDIAN_VAULT_PATH`
+   to scaffold the cross-device continuity folder `00-Claude-Context\` in the
+   vault. If the env var isn't set, prints the manual command to run later.
+   Idempotent — safe to re-run after `setx OBSIDIAN_VAULT_PATH` and a relogin.
 
 ### Path C manual import (required)
 
 Claude Desktop installs Skills only via the GUI:
 
 1. Open Claude Desktop → **Settings** → **Skills** → **Import**.
-2. Select each `.zip` file from the `dist-desktop\` folder. (Three imports total.)
+2. Select each `.zip` file from the `dist-desktop\` folder. **Seven imports
+   total**: the three v2 skills plus the four v3 continuity skills listed above.
 3. **Restart Claude Desktop** so the new MCP servers in
    `%APPDATA%\Claude\claude_desktop_config.json` are picked up.
 
@@ -380,7 +392,7 @@ In a new chat in Claude Desktop:
    > Save this paper: 10.1038/s41586-021-03819-2
 
    Expected: `paper-capture` triggers, downloads PDF (if institutional access),
-   writes `30_Literature/<citekey>.md`.
+   writes `30_Literature/{citekey}.md`.
 
 3. *Library* — ask:
    > What's in my literature library? Show me the top tags.
@@ -544,6 +556,11 @@ PS> Remove-Item -Force $env:USERPROFILE\.claude\hooks\statusline.ps1, `
                        $env:USERPROFILE\.claude\hooks\session-start-context.py, `
                        $env:USERPROFILE\.claude\hooks\stop-persist-todos.py, `
                        $env:USERPROFILE\.claude\hooks\paper-mention-detect.py
+PS> Remove-Item -Force $env:USERPROFILE\.claude\commands\research.md, `
+                       $env:USERPROFILE\.claude\commands\capture-paper.md, `
+                       $env:USERPROFILE\.claude\commands\lit-map.md, `
+                       $env:USERPROFILE\.claude\commands\status.md, `
+                       $env:USERPROFILE\.claude\commands\port-to-vault.md
 PS> Remove-Item -Recurse -Force $env:USERPROFILE\.claude\mcp-servers\Sci-Hub-MCP-Server, `
                                   $env:USERPROFILE\.claude\mcp-servers\university-paper-access
 # Then edit %USERPROFILE%\.claude.json and %USERPROFILE%\.claude\settings.json by hand.
@@ -551,14 +568,17 @@ PS> Remove-Item -Recurse -Force $env:USERPROFILE\.claude\mcp-servers\Sci-Hub-MCP
 
 ### Path C (Desktop)
 
-1. Claude Desktop → Settings → Skills → remove `deep-research`, `paper-capture`,
-   `lit-status`.
+1. Claude Desktop → Settings → Skills → remove all seven imported skills:
+   `deep-research`, `paper-capture`, `lit-status`, `capture-research-state`,
+   `resume-research-state`, `sync-check`, `paper-map`.
 2. Edit `%APPDATA%\Claude\claude_desktop_config.json` to remove the pack's
    `mcpServers` entries.
 3. (Optional) Remove `%USERPROFILE%\.claude\mcp-servers\` if no other Claude
    product uses those servers.
 
-The Obsidian vault contents are untouched by uninstall — your captured papers stay.
+The Obsidian vault contents are untouched by uninstall — your captured papers
+and your `00-Claude-Context\` folder stay. If you want a clean slate on the
+continuity layer too, delete `00-Claude-Context\` from the vault by hand.
 
 ---
 
@@ -575,5 +595,6 @@ The Obsidian vault contents are untouched by uninstall — your captured papers 
 | Vault auto-write to `00_Inbox/` | ✅ | ✅ | ✅ |
 | `paper-capture` for any read paper | ✅ | ✅ | ✅ |
 | Obsidian MCP integration | ✅ | ✅ | ✅ |
+| Cross-device continuity (`capture-research-state`, `resume-research-state`, `sync-check`, `paper-map`) | ❌ | ❌ | ✅ — v3 |
 
 If any of the ✅ rows for your chosen path is failing, see Troubleshooting (§4).
