@@ -1,0 +1,53 @@
+{
+  "model": "opus",
+  "statusLine": {
+    "type": "command",
+    "command": "bash ${HOME}/.claude/hooks/statusline.sh"
+  },
+  "hooks": {
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${HOME}/.claude/hooks/precompact-handoff.py"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${HOME}/.claude/hooks/session-start-context.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${HOME}/.claude/hooks/stop-persist-todos.py"
+          }
+        ]
+      }
+    ]
+  },
+  "_comment_optional_hooks": "Uncomment the block below to enable the paper-mention-detect hook (off by default).",
+  "_optional_hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${HOME}/.claude/hooks/paper-mention-detect.py"
+          }
+        ]
+      }
+    ]
+  }
+}
