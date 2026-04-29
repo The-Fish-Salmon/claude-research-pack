@@ -329,17 +329,16 @@ What it does:
      (Desktop's location) instead of `%USERPROFILE%\.claude.json`.
 2. Calls `scripts\prepare-desktop-pack.ps1`, which copies the v3 helper
    `tools\research_sync_agent.py` into each continuity skill's `bin\` folder,
-   stages everything under a plugin manifest at `.claude-plugin\plugin.json`,
-   and zips it as **a single bundle** at `dist-desktop\research-pack.zip`.
-   The bundle contains all seven skills under one plugin namespace
-   (`research-pack:`), which is what Claude Desktop's loader needs to register
-   the skills properly. (Earlier per-skill zips imported but the larger ones
-   were silently dropped from the runtime registry — see Troubleshooting.)
+   then writes one zip per skill into `dist-desktop\<skill-name>.zip`.
+   Each zip has the layout Claude Desktop's importer demands: **exactly one
+   top-level folder** named after the skill, with **exactly one SKILL.md
+   inside it**, plus any subfolders (`modes/`, `references/`, `templates/`,
+   `bin/`).
 
    **Why the rename `deep-research → academic-deep-research`?** Claude Desktop
    ships a built-in skill named `deep-research`. Two skills with the same
-   name collide and the built-in wins. The unique name plus the
-   `research-pack:` namespace prefix forces Desktop to invoke ours.
+   name collide and the built-in wins. The unique name forces Desktop to
+   invoke ours.
 3. If `OBSIDIAN_VAULT_PATH` is set in the current shell, runs
    `python tools\research_sync_agent.py init --vault $env:OBSIDIAN_VAULT_PATH`
    to scaffold the cross-device continuity folder `00-Claude-Context\` in the
@@ -351,13 +350,16 @@ What it does:
 Claude Desktop installs Skills only via the GUI:
 
 1. Open Claude Desktop → **Settings** → **Skills**.
-2. **If you imported per-skill zips from a v3.x build before this one** (any
-   of `academic-deep-research`, `deep-research`, `paper-capture`, `lit-status`,
-   `capture-research-state`, `resume-research-state`, `sync-check`, `paper-map`),
-   **remove them all first**. The new bundle re-imports them under a different
-   namespace; leaving the old ones in causes name conflicts.
-3. Click **Import**. Select `dist-desktop\research-pack.zip`. One import gets
-   you all seven skills.
+2. **If you imported anything from this pack before** — including per-skill
+   zips with loose `SKILL.md` at the root, a `research-pack` bundle from a
+   transient v3 attempt, or any of `deep-research`, `academic-deep-research`,
+   `paper-capture`, `lit-status`, `capture-research-state`,
+   `resume-research-state`, `sync-check`, `paper-map` — **remove all of them
+   first**. Mixing old and new imports causes name conflicts.
+3. Click **Import**. Import each `.zip` from `dist-desktop\` one at a time —
+   **seven imports total**: `academic-deep-research`, `paper-capture`,
+   `lit-status`, `capture-research-state`, `resume-research-state`,
+   `sync-check`, `paper-map`.
 4. **Restart Claude Desktop** so the new MCP servers in
    `%APPDATA%\Claude\claude_desktop_config.json` are picked up.
 
@@ -527,7 +529,8 @@ If you genuinely want to retire old snapshots, do it manually with
 | Captured papers don't show in `/lit-map` | A, B | `OBSIDIAN_VAULT_PATH` not visible to the Claude Code process. Path A: `echo $OBSIDIAN_VAULT_PATH` in the launching shell. Path B: open a fresh PowerShell after `setx` and verify `$env:OBSIDIAN_VAULT_PATH`. |
 | Desktop deep-research seems to skip checkpoints | C | The user has prompted aggressively for an answer. The model is supposed to hold the line; if you see this, screenshot and report — it's a regression in the lite skill. |
 | `<tool_use_error>Unknown skill: deep-research</tool_use_error>` and a fallback to Claude's built-in deep-research feature | C | Pre-fix v3 build that named the skill `deep-research`, which collides with Desktop's built-in. Fix: re-run `setup.ps1 -Mode Desktop` (which now names the folder + skill `academic-deep-research`), remove the old `deep-research` skill from Desktop's Settings → Skills, then import the new `dist-desktop\research-pack.zip`. Phrase requests in free text (avoid the literal phrase "deep-research") so Desktop doesn't pre-empt with the built-in. |
-| `Unknown skill: academic-deep-research` even after the rename | C | Pre-bundle v3.x build that imported skills as raw `SKILL.md`-at-root zips with no plugin manifest. Desktop loads them but the runtime registry silently drops some — registration is unreliable without a `.claude-plugin/plugin.json` declaring a namespace. Fix: re-run `setup.ps1 -Mode Desktop` (now produces a single `dist-desktop\research-pack.zip` bundle with proper manifest under namespace `research-pack:`), remove all per-skill imports from Settings → Skills, import the new bundle, restart Desktop. |
+| `Unknown skill: academic-deep-research` even after the rename | C | Pre-fix v3.x build whose zips had loose `SKILL.md` at the zip root (no top-level folder). Desktop's importer requires **exactly one top-level folder** containing **exactly one SKILL.md** per zip — without that, registration is inconsistent and the skill silently fails to surface in the runtime registry. Fix: re-run `setup.ps1 -Mode Desktop` (now wraps each skill in its own folder inside its zip), remove every prior import from this pack in Settings → Skills, import the new seven `.zip`s, restart Desktop. |
+| Skill import fails with "must contain exactly one top-level folder" or "exactly one SKILL.md" | C | Pre-fix v3.x layout — old zips had loose files at root or, in the very brief bundle attempt, a `.claude-plugin/` plus multiple `skills/<name>/SKILL.md`. Both violate the importer's rule. Re-run `setup.ps1 -Mode Desktop` to regenerate the seven correctly-shaped zips. |
 | `setup.ps1` warns "Obsidian not detected" but Obsidian IS installed | A, B, C | Pre-fix v3 build only checked `%LOCALAPPDATA%\Obsidian\Obsidian.exe`, but the per-user installer drops it under `%LOCALAPPDATA%\Programs\Obsidian\`. Cosmetic — the install proceeds. Fixed in current setup.ps1 which probes both per-user and Program Files paths. |
 | `sync-check` says "Not Ready — missing folder: …/00-Claude-Context" | C | The continuity folder hasn't been initialized. Run `python tools\research_sync_agent.py init --vault $env:OBSIDIAN_VAULT_PATH` (or re-run `setup.ps1 -Mode Desktop` after `setx OBSIDIAN_VAULT_PATH`). |
 | `capture-research-state` errors with `bin/research_sync_agent.py: not found` | C | The helper wasn't bundled into the imported skill. You're on a pre-fix v3 build. Re-run `setup.ps1 -Mode Desktop` (which now copies `tools\research_sync_agent.py` into each continuity skill's `bin\` before zipping), then re-import the four `.zip`s and restart Desktop. |
@@ -587,10 +590,9 @@ PS> Remove-Item -Recurse -Force $env:USERPROFILE\.claude\mcp-servers\Sci-Hub-MCP
 
 ### Path C (Desktop)
 
-1. Claude Desktop → Settings → Skills → remove the `research-pack` plugin (or,
-   on older v3.x builds, the seven individually imported skills:
+1. Claude Desktop → Settings → Skills → remove the seven imported skills:
    `academic-deep-research`, `paper-capture`, `lit-status`,
-   `capture-research-state`, `resume-research-state`, `sync-check`, `paper-map`).
+   `capture-research-state`, `resume-research-state`, `sync-check`, `paper-map`.
 2. Edit `%APPDATA%\Claude\claude_desktop_config.json` to remove the pack's
    `mcpServers` entries.
 3. (Optional) Remove `%USERPROFILE%\.claude\mcp-servers\` if no other Claude
