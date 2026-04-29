@@ -60,15 +60,73 @@ infer; if unclear, enter `socratic` first.
 ## Phases (every mode runs through these in order, single context)
 
 1. **Scoping** -- sharpen the research question, choose the mode, write a methodology blueprint.
-2. **Investigation** -- search the MCP servers in priority order, download and read promising papers.
-3. **Analysis** -- synthesize across sources, build a claim/evidence table.
-4. **Devil's Advocate Checkpoint 1** (after scoping/early synthesis): is the question well-formed and answerable from the literature?
-5. **Composition** -- draft the deliverable in the mode-appropriate format.
-6. **Devil's Advocate Checkpoint 2** (after composition): does the draft overstate what the cited sources actually claim?
-7. **Devil's Advocate Checkpoint 3** (final): are there obvious counter-arguments / contradicting papers we ignored?
-8. **Hand-off** -- write to vault `00_Inbox/research-{slug}-{YYYY-MM-DD}.md` via the `obsidian` MCP.
+2. **Scope confirmation** (mandatory pause; see Scope Confirmation Protocol below). Skip ONLY in `quick` and `fact-check` modes.
+3. **Investigation** -- search the MCP servers in priority order, download and read promising papers.
+4. **Analysis** -- synthesize across sources, build a claim/evidence table.
+5. **Devil's Advocate Checkpoint 1** (after scoping/early synthesis): is the question well-formed and answerable from the literature?
+6. **Composition** -- draft the deliverable in the mode-appropriate format.
+7. **Devil's Advocate Checkpoint 2** (after composition): does the draft overstate what the cited sources actually claim?
+8. **Devil's Advocate Checkpoint 3** (final): are there obvious counter-arguments / contradicting papers we ignored?
+9. **Citation pre-flight** (mandatory; see Citation Pre-flight Protocol below).
+10. **Hand-off** -- write to vault `00_Inbox/research-{slug}-{YYYY-MM-DD}.md` via the `obsidian` MCP.
 
 Skip phases that don't apply (e.g. `fact-check` skips composition; `socratic` runs only Phase 1).
+
+## Scope Confirmation Protocol (mandatory pause after Phase 1)
+
+In every mode EXCEPT `quick` and `fact-check`, after Phase 1 (Scoping) you
+MUST present the scope back to the user and wait for confirmation. Do not
+start Phase 3 (Investigation) until the user replies.
+
+Format:
+
+```
+=== SCOPE CONFIRMATION ===
+
+Before I search, here's how I'm reading your request:
+- Topic:        {one sentence}
+- Year range:   {YYYY-YYYY or "open"}
+- Languages:    {English / multilingual / etc.}
+- Inclusions:   {peer-reviewed lab, preprints OK, ...}
+- Exclusions:   {blog posts, retracted papers, ...}
+- Depth:        {quick / lit-review / full / systematic-review / review}
+- Time budget:  {e.g. 5-15 min for a quick run}
+
+Reply 'go' to proceed, or correct any of the above. I'll wait.
+```
+
+If the user's original request was genuinely vague (no topic, no scope at
+all), don't synthesize a scope -- drop into `socratic` mode instead and
+ask one focused clarifier per turn.
+
+## Citation Pre-flight Protocol (mandatory before Phase 10 Hand-off)
+
+After Composition (Phase 6) and the three Devil's Advocate checkpoints,
+before writing the final note to the vault:
+
+1. Walk every in-text citation in the draft. Extract the DOI / arXiv id /
+   Semantic Scholar paperId for each.
+2. For each citation, call
+   `mcp__semantic-scholar__get_semantic_scholar_paper_details` (or
+   `mcp__paper-mcp__paper_get_metadata` as fallback). The call should
+   return the paper title and authors.
+3. Compare the returned title/authors against what the draft claims:
+   - **Confirmed**: title + first-author both match. Mark `[verified]`
+     internally.
+   - **Mismatch**: title doesn't match -- the draft cited the wrong DOI.
+     Either fix the DOI (re-search Semantic Scholar) or replace the
+     in-text reference with `[UNVERIFIED -- DOI mismatch]`.
+   - **404 / not-found**: re-resolve via title-author-year search; if
+     that also fails, replace with `[UNVERIFIED -- could not re-confirm]`.
+4. Surface the count of unverified to the user in the final delivery line:
+   `Captured N citations; M re-verified, K flagged unverified.`
+5. If K > 0, list each unverified citation in a `## Unverified Citations`
+   section at the bottom of the draft, with what was attempted.
+
+Pre-flight is the integrity gate that catches the rare case where a
+sub-step of the pipeline (or the model itself) introduced a fabricated
+or mistyped DOI. It's cheap (one MCP call per citation) and catches the
+class of errors that Devil's Advocate misses.
 
 ## MCP server priority order
 

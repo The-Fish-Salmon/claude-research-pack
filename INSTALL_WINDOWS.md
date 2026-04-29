@@ -1,4 +1,4 @@
-# Install on Windows — Claude Research Pack v3
+# Install on Windows — Claude Research Pack v4
 
 This pack supports **three install paths**. Pick one based on which Claude product
 you'll use.
@@ -17,7 +17,10 @@ you'll use.
 | **Iron Rules + citation discipline** | ✅ | ✅ | ✅ |
 | **Paper capture into vault** | ✅ | ✅ | ✅ |
 | **Cross-device research continuity** (snapshot/resume via synced vault) | ❌ | ❌ | ✅ — v3 |
-| **Most-tested** | ✅ | new in v2 | new in v2 / v3 |
+| **Local-PDF ingestion** (drop a PDF, get a 30_Literature note) | ❌ | ❌ | ✅ — v4 |
+| **Interactive research co-pilot loop** (orient/question/suggest/synthesize/escalate) | ❌ | ❌ | ✅ — v4 |
+| **Mandatory scoping confirmation + citation pre-flight in deep-research** | ❌ | ❌ | ✅ — v4 |
+| **Most-tested** | ✅ | new in v2 | new in v2 / v3 / v4 |
 | **Setup time** | 30–45 min | 30–45 min | 20–30 min |
 
 **Decision tree:**
@@ -357,9 +360,9 @@ Claude Desktop installs Skills only via the GUI:
    `resume-research-state`, `sync-check`, `paper-map` — **remove all of them
    first**. Mixing old and new imports causes name conflicts.
 3. Click **Import**. Import each `.zip` from `dist-desktop\` one at a time —
-   **seven imports total**: `academic-deep-research`, `paper-capture`,
+   **nine imports total**: `academic-deep-research`, `paper-capture`,
    `lit-status`, `capture-research-state`, `resume-research-state`,
-   `sync-check`, `paper-map`.
+   `sync-check`, `paper-map`, `ingest-pdf` (v4), `research-copilot` (v4).
 4. **Restart Claude Desktop** so the new MCP servers in
    `%APPDATA%\Claude\claude_desktop_config.json` are picked up.
 
@@ -536,6 +539,10 @@ If you genuinely want to retire old snapshots, do it manually with
 | `capture-research-state` errors with `bin/research_sync_agent.py: not found` | C | The helper wasn't bundled into the imported skill. You're on a pre-fix v3 build. Re-run `setup.ps1 -Mode Desktop` (which now copies `tools\research_sync_agent.py` into each continuity skill's `bin\` before zipping), then re-import the four `.zip`s and restart Desktop. |
 | Two `session-snapshots/` files appear from the same minute | C | Concurrent snapshots from two devices. Expected — `resume-research-state` will surface both and ask which to use. Do not delete either. |
 | Continuity skill writes outside `00-Claude-Context/` | C | Skill misfire — Operating Rules forbid this. File a regression note; verify by running `git status` in your vault if it's a repo. |
+| `ingest-pdf` says "no extractable text" | C | The PDF is image-only / scanned. Run OCR with another tool first (Adobe Acrobat → Recognize Text, or `ocrmypdf` if you have it), then re-run ingest-pdf on the OCR'd file. |
+| `ingest-pdf` resolves the wrong DOI | C | Page 1 of the PDF had multiple DOIs (typically the journal master DOI plus the article DOI). Open the produced 30_Literature note and fix the `doi:` frontmatter by hand; re-run paper-capture with the corrected DOI to refresh the metadata. |
+| `research-copilot` keeps asking the same question | C | The user gave a one-word reply that the skill can't disambiguate. Reply with a full sentence answering the clarifier; the loop should advance. If it doesn't, restart the chat and start with an Orient ("Where is my research?"). |
+| Final draft from `academic-deep-research` is missing the `Captured N citations; M re-verified, K flagged unverified` line | C | Citation pre-flight didn't run — likely a v3.x build. Update the pack (`git pull` + re-run `setup.ps1 -Mode Desktop`), re-import academic-deep-research, restart Desktop. |
 
 ---
 
@@ -590,9 +597,10 @@ PS> Remove-Item -Recurse -Force $env:USERPROFILE\.claude\mcp-servers\Sci-Hub-MCP
 
 ### Path C (Desktop)
 
-1. Claude Desktop → Settings → Skills → remove the seven imported skills:
+1. Claude Desktop → Settings → Skills → remove the nine imported skills:
    `academic-deep-research`, `paper-capture`, `lit-status`,
-   `capture-research-state`, `resume-research-state`, `sync-check`, `paper-map`.
+   `capture-research-state`, `resume-research-state`, `sync-check`,
+   `paper-map`, `ingest-pdf`, `research-copilot`.
 2. Edit `%APPDATA%\Claude\claude_desktop_config.json` to remove the pack's
    `mcpServers` entries.
 3. (Optional) Remove `%USERPROFILE%\.claude\mcp-servers\` if no other Claude
@@ -618,5 +626,8 @@ continuity layer too, delete `00-Claude-Context\` from the vault by hand.
 | `paper-capture` for any read paper | ✅ | ✅ | ✅ |
 | Obsidian MCP integration | ✅ | ✅ | ✅ |
 | Cross-device continuity (`capture-research-state`, `resume-research-state`, `sync-check`, `paper-map`) | ❌ | ❌ | ✅ — v3 |
+| Local-PDF ingestion (`ingest-pdf`) | ❌ | ❌ | ✅ — v4 |
+| Interactive co-pilot loop (`research-copilot`) | ❌ | ❌ | ✅ — v4 |
+| Mandatory scope confirmation + citation pre-flight | ❌ | ❌ | ✅ — v4 |
 
 If any of the ✅ rows for your chosen path is failing, see Troubleshooting (§4).

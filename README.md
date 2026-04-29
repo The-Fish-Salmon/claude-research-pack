@@ -21,6 +21,9 @@ Pick one based on which Claude product you want to drive:
 | **Iron Rules + citation discipline** | ✅ | ✅ | ✅ |
 | **Paper capture into vault** | ✅ | ✅ | ✅ |
 | **Cross-device research continuity** (snapshot/resume via synced vault) | ❌ | ❌ | ✅ — v3 |
+| **Local-PDF ingestion** | ❌ | ❌ | ✅ — v4 |
+| **Interactive research co-pilot loop** | ❌ | ❌ | ✅ — v4 |
+| **Mandatory scope confirmation + citation pre-flight** | ❌ | ❌ | ✅ — v4 |
 | **Setup time** | 30–45 min | 30–45 min | 20–30 min |
 
 Decision tree and capability matrix in [INSTALL_WINDOWS.md](INSTALL_WINDOWS.md).
@@ -66,6 +69,16 @@ before relying on Path C output for publication-grade work.
   for setup. Backed by a stdlib Python helper at
   [tools/research_sync_agent.py](tools/research_sync_agent.py) bundled into each
   skill's `bin/` at zip time.
+- **`desktop-skills/ingest-pdf`** — v4. Drop a local PDF (or a folder of PDFs);
+  the skill extracts the DOI / arXiv id / title from the file, hands off to
+  `paper-capture` for resolution, and moves the original into
+  `80_Attachments/papers/{citekey}.pdf`. Closes the gap where users had a
+  paper on disk but no DOI handy.
+- **`desktop-skills/research-copilot`** — v4. The interactive loop layer:
+  Orient → Question → Suggest → Synthesize → Escalate. One conversational
+  move per turn, never invents citations, defers heavy lifting to the other
+  skills. Turns the pack from a one-shot lit-review tool into an ongoing
+  research conversation.
 
 ### Slash commands (Path A / B only)
 

@@ -34,6 +34,7 @@ The skill supports several report shapes; the slash command or invocation passes
 - **`gaps`** -- papers cited in projects but not captured.
 - **`orphans`** -- papers in library not linked to any project or MOC.
 - **`citation-map {citekey}`** -- for one paper, show which project notes reference it.
+- **`next-action`** -- "what should I read next?" Returns a single, prioritized next action in <=5 lines: the most-cited unread paper in the active project (or, if no active project, the most-recently-added unread paper), plus the exact prompt the user can paste back to act on it (typically `Extract claims from {citekey}` or `Synthesize {citekey1} and {citekey2}`). Used by `research-copilot` for its Suggest move.
 
 ## Constraints
 
