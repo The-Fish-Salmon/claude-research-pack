@@ -4,7 +4,7 @@ Format: `{firstauthor-lastname-lower}{year}{first-content-word-of-title}`
 
 ## Construction
 
-1. **First author last name**, lowercased, ASCII-folded (`Müller` → `muller`, `O'Brien` → `obrien`).
+1. **First author last name**, lowercased, ASCII-folded (`Mueller` -> `muller`, `O'Brien` -> `obrien`).
 2. **Year** as 4 digits.
 3. **First content word of the title**, lowercased, ASCII-folded. Drop these stopwords if they're first: `a`, `an`, `the`, `on`, `of`, `for`, `in`, `to`, `with`, `from`, `by`, `into`, `at`. If the title starts with a number, use the next content word.
 
@@ -13,7 +13,7 @@ Format: `{firstauthor-lastname-lower}{year}{first-content-word-of-title}`
 | Authors | Year | Title | Citekey |
 |---|---|---|---|
 | Kim, Lee, Park | 2023 | Ionic transistors for neuromorphic computing | `kim2023ionic` |
-| Müller, Smith | 2021 | The role of diffusion in EDL formation | `muller2021role` |
+| Mueller, Smith | 2021 | The role of diffusion in EDL formation | `muller2021role` |
 | Wang, Chen | 2024 | A 28 nm electrochemical transistor array | `wang2024electrochemical` |
 | Single-author Patel | 2019 | On the persistence of dopant inhomogeneity | `patel2019persistence` |
 

@@ -1,6 +1,6 @@
 # Mode: `review` (Desktop-lite)
 
-Evaluate a draft document the user provides — a manuscript section, a literature
+Evaluate a draft document the user provides -- a manuscript section, a literature
 review, a grant aim, an argument essay. The output is editorial feedback, not a new
 piece.
 
@@ -8,22 +8,22 @@ piece.
 
 1. **Read the draft** in full. Identify the central claim(s).
 2. **Extract every cited source** in the draft. Build a citation list.
-3. **Investigation** — verify each citation:
+3. **Investigation** -- verify each citation:
    - Search Semantic Scholar for the source.
    - Confirm the source exists (DOI / arXiv / paper id resolves).
    - Fetch the abstract; if the draft cites a specific finding, confirm the
      abstract supports it. If ambiguous, download full text.
    - Invoke `paper-capture` for any full text you actually read.
-4. **Bias audit** — does the draft cherry-pick? What major contradicting work isn't
+4. **Bias audit** -- does the draft cherry-pick? What major contradicting work isn't
    cited? (No separate bias-auditor agent on Desktop; do this inline.)
-5. **Devil's Advocate** — strongest counter-argument the draft does not address.
+5. **Devil's Advocate** -- strongest counter-argument the draft does not address.
    Run the SKILL.md protocol.
-6. **Editorial pass** — clarity, structure, citation form, hedging accuracy.
-7. **Hand-off** — `00_Inbox/review-{slug}-{date}.md`.
+6. **Editorial pass** -- clarity, structure, citation form, hedging accuracy.
+7. **Hand-off** -- `00_Inbox/review-{slug}-{date}.md`.
 
 ## Required sections
 
-- Summary of the draft's argument (in your words, ≤200 words; user confirms accuracy)
+- Summary of the draft's argument (in your words, <=200 words; user confirms accuracy)
 - Citation audit:
   - Citations that check out
   - Citations that don't exist OR don't say what's claimed (each with the discrepancy)

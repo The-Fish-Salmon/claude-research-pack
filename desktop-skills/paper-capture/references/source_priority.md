@@ -15,7 +15,7 @@ When the metadata is resolved and we have a DOI / arXiv id, try the sources in t
    - Source-specific downloaders for preprint servers and PMC open access.
 4. **`scihub`** (`mcp__scihub__download_scihub_pdf`)
    - Last resort. Some networks block; respect that.
-   - Note legal context — the user has chosen to enable this server.
+   - Note legal context -- the user has chosen to enable this server.
 
 ## Failure handling
 

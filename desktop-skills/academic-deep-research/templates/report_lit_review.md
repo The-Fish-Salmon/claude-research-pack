@@ -12,7 +12,7 @@ papers_captured: []
 ## Scope and inclusion criteria
 
 - **Topic boundary**: <...>
-- **Time window**: {e.g. 2015–present, or open}
+- **Time window**: {e.g. 2015-present, or open}
 - **Languages**: {e.g. English}
 - **Source tiers accepted**: <A, B optionally C with caveat>
 - **Excluded**: {e.g. blog posts, retracted papers, predatory venues}
@@ -29,9 +29,9 @@ papers_captured: []
 
 ### kim2023ionic
 
-**Citation**: Kim, J., et al. (2023). <Title>. *Nature Electronics*, 6(4), 211–220. https://doi.org/10.1038/s41928-023-...
+**Citation**: Kim, J., et al. (2023). <Title>. *Nature Electronics*, 6(4), 211-220. https://doi.org/10.1038/s41928-023-...
 
-**Annotation**: <100–200 words: question, method, finding, why it matters here.>
+**Annotation**: <100-200 words: question, method, finding, why it matters here.>
 
 **Quality / RoB**: {one short paragraph.}
 
@@ -57,7 +57,7 @@ papers_captured: []
 
 ## Suggested next reads
 
-<3–6 references that would deepen specific sub-questions.>
+<3-6 references that would deepen specific sub-questions.>
 
 ## References
 

@@ -1,12 +1,12 @@
 ---
 name: paper-map
-description: Maintain the cross-device paper index at {vault}/00-Claude-Context/paper-map.md — a portable summary of papers, their main claim, methods, status, and the threads they touch. Triggers on free text like "update paper-map", "add this paper to the map", "rebuild the paper-map from 30_Literature", "what claims does paper X support", or whenever capture-research-state hasn't refreshed the map after a paper-heavy session. Complements lit-status (which queries the full 30_Literature/ library) by carrying just the active research's papers in a synced file the next device can read.
+description: Maintain the cross-device paper index at {vault}/00-Claude-Context/paper-map.md -- a compact summary of the papers an active research thread is using, kept in the synced continuity folder so the next device sees the bibliographic state. Triggers on "update paper-map", "add this paper to the map", "rebuild paper-map from 30_Literature", "what claims does paper X support".
 ---
 
 # Paper Map (Desktop)
 
 Use this skill to maintain `{vault}/00-Claude-Context/paper-map.md`. It is the
-**portable** paper index — a compact summary of the papers an active research
+**portable** paper index -- a compact summary of the papers an active research
 thread is using, kept in the synced continuity folder so the next device can
 pick up the bibliographic state.
 
@@ -21,7 +21,7 @@ a fresh device to reorient.
    also `open-questions.md` / `decision-log.md` / `task-ledger.md` per the
    schema). Never write outside `00-Claude-Context/`.
 2. Read `30_Literature/{citekey}.md` and `00-Claude-Context/paper-map.md` to
-   collect data. Don't fetch papers — that's `paper-capture`.
+   collect data. Don't fetch papers -- that's `paper-capture`.
 3. Keep entries compact and sortable by citekey. Don't delete useful prior
    context just because the user asked you to add a new paper.
 
@@ -34,29 +34,29 @@ a fresh device to reorient.
 - Status: read | skimmed | unread | extracted | cited
 - Main claim: Ion-gated synaptic transistors achieve memory-retention scaling
   proportional to ion residence time.
-- Methods/data: WSe2 EDL transistor; pulsed I/V; 1 ns–10 ms regimes.
+- Methods/data: WSe2 EDL transistor; pulsed I/V; 1 ns-10 ms regimes.
 - Useful for: fading-memory characterization in active project.
 - Caveats: Single-device measurements; no statistical population.
 - Threads: [[#tau-c-trend]], [[#fading-memory-validation]]
 - Tags: ion-gated, edl, memory, wse2
 ```
 
-Citekey is the H2 anchor — **stable**, never rename. If a paper's role in the
+Citekey is the H2 anchor -- **stable**, never rename. If a paper's role in the
 research changes, edit the entry's `Status` / `Useful for` / `Threads` fields,
 don't move the heading.
 
 ## Procedure
 
-1. Read the current `paper-map.md`. Build an in-memory map of citekey → entry.
+1. Read the current `paper-map.md`. Build an in-memory map of citekey -> entry.
 2. Determine the operation:
-   - **Add** — user pasted a citekey or DOI; check the entry doesn't exist;
+   - **Add** -- user pasted a citekey or DOI; check the entry doesn't exist;
      fetch metadata from `30_Literature/{citekey}.md` if available.
-   - **Update** — change Status / Useful for / Threads / Caveats based on what
+   - **Update** -- change Status / Useful for / Threads / Caveats based on what
      happened in this session.
-   - **Cross-link** — if an entry's Main claim conflicts with another, add a
+   - **Cross-link** -- if an entry's Main claim conflicts with another, add a
      line to `open-questions.md` (or `decision-log.md` if the conflict is
      already resolved).
-   - **Rebuild** — user asked for a fresh build from `30_Literature/`. Walk the
+   - **Rebuild** -- user asked for a fresh build from `30_Literature/`. Walk the
      directory, build entries for papers tagged with the active project (or
      all of them, if user said so), and replace the file body. Don't touch
      frontmatter.
@@ -66,12 +66,12 @@ don't move the heading.
 
 ## When to escalate
 
-- A paper's Main claim contradicts an entry already in `decision-log.md` →
+- A paper's Main claim contradicts an entry already in `decision-log.md` ->
   surface to the user before writing.
-- The user asks to delete an entry → confirm explicitly. The continuity layer
+- The user asks to delete an entry -> confirm explicitly. The continuity layer
   is biased toward append-only; deletions are rare and should be deliberate.
 - `30_Literature/{citekey}.md` is missing for a paper the user wants in the
-  map → suggest `paper-capture {DOI}` first; mark Status `unread` if user
+  map -> suggest `paper-capture {DOI}` first; mark Status `unread` if user
   insists on adding without capturing.
 
 ## What this skill does NOT do
@@ -79,5 +79,5 @@ don't move the heading.
 - It does NOT replace `lit-status` for library-wide queries (counts, gaps,
   orphans). That skill reads `30_Literature/` directly.
 - It does NOT download papers. That's `paper-capture`.
-- It does NOT auto-sync — Obsidian Sync / your sync provider does that. This
+- It does NOT auto-sync -- Obsidian Sync / your sync provider does that. This
   skill just writes the file.

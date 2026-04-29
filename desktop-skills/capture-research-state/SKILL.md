@@ -1,12 +1,12 @@
 ---
 name: capture-research-state
-description: Snapshot the current research session into the user's Obsidian vault so a future session — even on a different device — can resume. Triggers on free text like "save research state", "snapshot the session", "capture state before I switch devices", "checkpoint my research", "end-of-session save". Writes append-only to {vault}/00-Claude-Context/session-snapshots/ and updates the seven durable files in the same folder. Pairs with resume-research-state on the receiving device.
+description: Snapshot the current research session into the user's Obsidian vault so a future session -- even on a different device -- can resume. Triggers on "save research state", "snapshot the session", "capture state before I switch devices", "checkpoint my research". Writes append-only to {vault}/00-Claude-Context/session-snapshots/ and updates the seven durable files there.
 ---
 
 # Capture Research State (Desktop)
 
 Use this skill to turn the current Claude Desktop session into durable, portable
-research context — a snapshot another device can pick up later.
+research context -- a snapshot another device can pick up later.
 
 The destination is a visible folder at the vault root: `00-Claude-Context/`. It
 contains an append-only `session-snapshots/` subfolder plus seven durable
@@ -40,29 +40,29 @@ skill when you want continuity across devices.
 2. Confirm `00-Claude-Context/manifest.json` exists. If missing, run `init` (see
    rule 4) before continuing.
 3. Build a snapshot in memory with these sections:
-   - **Current goal** — one paragraph.
-   - **Active evidence and files** — papers, vault notes, datasets, code paths.
-   - **Claims established** — what was settled this session (with citation keys).
-   - **Decisions made** — including reasoning.
-   - **Open questions** — unresolved items blocking progress.
-   - **Task ledger changes** — completed, active, deferred, abandoned.
-   - **Preferences or corrections learned** — user steering this session.
-   - **Resume prompt** — a 2–4 sentence imperative for the next session.
+   - **Current goal** -- one paragraph.
+   - **Active evidence and files** -- papers, vault notes, datasets, code paths.
+   - **Claims established** -- what was settled this session (with citation keys).
+   - **Decisions made** -- including reasoning.
+   - **Open questions** -- unresolved items blocking progress.
+   - **Task ledger changes** -- completed, active, deferred, abandoned.
+   - **Preferences or corrections learned** -- user steering this session.
+   - **Resume prompt** -- a 2-4 sentence imperative for the next session.
 4. Write the snapshot to
    `00-Claude-Context/session-snapshots/{YYYY-MM-DDTHHMMSSZ}-{device-slug}.md`.
    The timestamp is UTC, ISO 8601 with the `Z` suffix. The device slug comes
    from the active machine's hostname (lowercased, alphanumerics + dashes).
    If a file with that exact name somehow exists, append `-{pid}` for collision
-   avoidance — never overwrite.
+   avoidance -- never overwrite.
 5. Update the seven durable files from the new snapshot. Each update preserves
    prior content; you are appending or rewriting summary sections, not deleting:
-   - `current-state.md` — overwrite the "Latest snapshot summary" sections.
-   - `research-memory.md` — append durable facts.
-   - `preferences.md` — append/correct user preferences.
-   - `decision-log.md` — append today's decisions with date.
-   - `open-questions.md` — add new, mark closed-but-keep-history.
-   - `task-ledger.md` — move tasks between Active and Done.
-   - `paper-map.md` — only when papers / claims / tags changed.
+   - `current-state.md` -- overwrite the "Latest snapshot summary" sections.
+   - `research-memory.md` -- append durable facts.
+   - `preferences.md` -- append/correct user preferences.
+   - `decision-log.md` -- append today's decisions with date.
+   - `open-questions.md` -- add new, mark closed-but-keep-history.
+   - `task-ledger.md` -- move tasks between Active and Done.
+   - `paper-map.md` -- only when papers / claims / tags changed.
 6. Bump `manifest.json`'s `snapshot_count` and `last_updated` (and
    `last_updated_device` to your slug).
 7. Report one line to the user: `Captured: snapshot {filename}, durable files
@@ -70,7 +70,7 @@ skill when you want continuity across devices.
 
 ## Conflict prevention
 
-- Don't run `init` if `manifest.json` already exists — it's idempotent for
+- Don't run `init` if `manifest.json` already exists -- it's idempotent for
   files but you don't need to call it.
 - If `validate` (or your inspection) reveals a stale or corrupt durable file,
   prefer surgical edits to a single key rather than rewriting the file from

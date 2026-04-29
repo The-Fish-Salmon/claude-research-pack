@@ -11,7 +11,7 @@ papers_captured: []
 
 ## Executive summary
 
-<200–400 words. Lead with the answer, then the evidence shape, then the caveats.>
+<200-400 words. Lead with the answer, then the evidence shape, then the caveats.>
 
 ## 1. Background and question
 
@@ -75,11 +75,11 @@ papers_captured: []
 ## Provenance
 
 ### MCP calls
-- {server.tool(query)} → n results
+- {server.tool(query)} -> n results
 - ...
 
 ### Papers captured to vault
-- {citekey} — {one-line}
+- {citekey} -- {one-line}
 - ...
 
 ### Devil's Advocate checkpoints

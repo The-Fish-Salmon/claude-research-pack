@@ -50,15 +50,15 @@ Newest snapshot: {filename or "none"}
 Next action:     {one specific step}
 ```
 
-For "Not Ready", `Next action` should be the single most useful step — usually
+For "Not Ready", `Next action` should be the single most useful step -- usually
 one of:
 
 - `python "${CLAUDE_PLUGIN_ROOT}/bin/research_sync_agent.py" init --vault "{path}"`
 - "Set OBSIDIAN_VAULT_PATH to the vault root and re-run."
 - "Edit `{file}` to restore frontmatter key `{key}`."
-- "Sync provider is split-brain — review snapshots {a} and {b} and pick one."
+- "Sync provider is split-brain -- review snapshots {a} and {b} and pick one."
 
-Don't enumerate every problem at once if there are many — name the one that
+Don't enumerate every problem at once if there are many -- name the one that
 unblocks the next step. The user re-runs sync-check after fixing.
 
 ## What sync-check should NOT do
