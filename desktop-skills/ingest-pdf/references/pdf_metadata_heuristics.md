@@ -19,7 +19,7 @@ Notes:
 - If you find more than one match, prefer the one closest to the title.
   Publishers sometimes embed the journal's master DOI plus the article DOI;
   the article DOI is usually first.
-- Strip trailing punctuation (`.`, `,`, `)`) — those are not part of the DOI.
+- Strip trailing punctuation (`.`, `,`, `)`) -- those are not part of the DOI.
 
 ## arXiv id regex
 
@@ -34,7 +34,7 @@ https?://arxiv\.org/abs/\d{4}\.\d{4,5}
 ```
 
 If the version suffix is present (e.g. `2103.04822v3`), strip it before
-handing to paper-capture — Semantic Scholar uses the unversioned id.
+handing to paper-capture -- Semantic Scholar uses the unversioned id.
 
 ## Title extraction
 
@@ -45,7 +45,7 @@ means:
   short and ALL CAPS or Title Case)
 - "ARTICLE", "RESEARCH ARTICLE", "REVIEW", "LETTER", "PERSPECTIVE" labels
 - Volume / issue / DOI / submission-date strings
-- "© Year Publisher" copyright lines
+- "(c) Year Publisher" copyright lines
 - arXiv preprint banner
 
 Heuristic that works ~80% of the time on physics / chemistry / biology
@@ -75,18 +75,18 @@ For the citekey, paper-capture only needs the **last name**:
 
 - `Smith` from `Jane A. Smith` or `J. A. Smith`
 - `Smith` from `Smith, J. A.` (take the part before the comma)
-- Strip diacritics (`Müller` -> `muller`, `García` -> `garcia`) — paper-capture
+- Strip diacritics (`Mueller` -> `muller`, `Garcia` -> `garcia`) -- paper-capture
   does this anyway, but doing it here makes search results cleaner.
 
 ## Year extraction
 
 Look for a four-digit number 1900-2099 in:
 
-1. The running header / footer of page 1 (most reliable — journals always
+1. The running header / footer of page 1 (most reliable -- journals always
    put the publication year there).
 2. The DOI suffix (some publishers embed the year, e.g. `10.1038/s41586-021-03819-2`
    has `2021` in the article id; this is unreliable, don't rely on it).
-3. The reference list of the article itself (no — that's other papers'
+3. The reference list of the article itself (no -- that's other papers'
    years, not this paper's year).
 4. The submission-date line ("Submitted YYYY", "Published YYYY"). If the
    submission and publication years differ, prefer **publication**.
@@ -100,7 +100,7 @@ If after running all three heuristics you have any of:
 - No four-digit year anywhere on page 1
 - Multiple plausible titles
 
-…report to the user and ask for clarification rather than guessing. A
+...report to the user and ask for clarification rather than guessing. A
 hallucinated citekey (`smith2021unknown`) is worse than a missing one,
 because it pollutes the vault.
 
