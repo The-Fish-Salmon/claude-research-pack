@@ -1,6 +1,6 @@
 ---
 name: lit-status
-description: Query the user's Obsidian literature library -- counts by status, tags, projects, and citation links. Reports unread / under-read papers, papers cited in active projects but missing from the vault, and tag clusters. Use when the user asks "what have I read on X?", "what's in my library?", "what should I read next?", or "show me the gaps in my reading".
+description: Query the Obsidian literature library: counts by status, tags, projects; orphans; gaps; reading queue. Use for "what's in my library", "what should I read next".
 ---
 
 # Lit Status (Desktop)

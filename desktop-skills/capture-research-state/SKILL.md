@@ -1,6 +1,6 @@
 ---
 name: capture-research-state
-description: Snapshot the current research session into the user's Obsidian vault so a future session -- even on a different device -- can resume. Triggers on "save research state", "snapshot the session", "capture state before I switch devices", "checkpoint my research". Writes append-only to {vault}/00-Claude-Context/session-snapshots/ and updates the seven durable files there.
+description: Snapshot the current research session into the Obsidian vault for cross-device resume. Use for "save research state", "snapshot session", "checkpoint research".
 ---
 
 # Capture Research State (Desktop)

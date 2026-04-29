@@ -1,6 +1,6 @@
 ---
 name: paper-map
-description: Maintain the cross-device paper index at {vault}/00-Claude-Context/paper-map.md -- a compact summary of the papers an active research thread is using, kept in the synced continuity folder so the next device sees the bibliographic state. Triggers on "update paper-map", "add this paper to the map", "rebuild paper-map from 30_Literature", "what claims does paper X support".
+description: Maintain the cross-device paper index at {vault}/00-Claude-Context/paper-map.md. Use for "update paper-map", "add this paper to the map", "rebuild paper-map".
 ---
 
 # Paper Map (Desktop)

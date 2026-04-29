@@ -1,6 +1,6 @@
 ---
 name: academic-deep-research
-description: Multi-mode academic literature pipeline grounded in MCP paper sources (semantic-scholar, arxiv, paper-search, university-paper-access, scihub) with citation discipline and a draft to the user's Obsidian vault 00_Inbox. Use when the user asks for a literature review, fact-check, systematic review, or open-ended scholarly question that needs real cited papers. Modes: full, quick, lit-review, fact-check, socratic, systematic-review, review.
+description: Citation-disciplined literature pipeline backed by paper MCP servers (semantic-scholar, arxiv, paper-search). Use for lit review, fact-check, systematic review, scholarly research.
 ---
 
 # Academic Deep Research (Desktop-lite)

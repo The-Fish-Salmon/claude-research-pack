@@ -1,6 +1,6 @@
 ---
 name: paper-capture
-description: Resolve a paper from a DOI, arXiv id, URL, or "Author Year keyword" string into the user's Obsidian vault -- fetches metadata, downloads PDF via the highest-priority MCP source available, generates a citekey, and writes a literature note (30_Literature/CITEKEY.md) from the literature template. Use whenever the user wants to add a paper to their library, when deep-research reads a paper's full text, or when the user mentions a DOI or arXiv id in chat.
+description: Resolve a paper from a DOI, arXiv id, URL, or Author-Year-keyword into the Obsidian vault. Fetches metadata, downloads PDF, writes 30_Literature/CITEKEY.md.
 ---
 
 # Paper Capture (Desktop)

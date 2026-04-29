@@ -1,6 +1,6 @@
 ---
 name: sync-check
-description: Verify that the user's Obsidian vault is set up for cross-device research continuity. Triggers on free text like "run sync-check", "is my continuity folder ok", "verify my vault is ready for sync", "check 00-Claude-Context", or proactively when capture-research-state / resume-research-state can't find the expected files. Reports Ready / Not Ready and one specific next action.
+description: Verify the Obsidian vault is set up for cross-device research continuity. Use for "sync-check", "is my continuity folder ok", "verify vault for sync".
 ---
 
 # Sync Check (Desktop)

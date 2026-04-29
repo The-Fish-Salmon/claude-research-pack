@@ -1,6 +1,6 @@
 ---
 name: resume-research-state
-description: Rehydrate a Claude Desktop session from the cross-device research-continuity folder in the Obsidian vault. Triggers on free text like "resume research", "where was I", "pick up where I left off", "what's the state of my research", "load research context from vault", or any session-start message after a long gap. Reads {vault}/00-Claude-Context/ -- never reads Claude private app data. Pairs with capture-research-state, which writes the same folder.
+description: Rehydrate a Claude Desktop session from {vault}/00-Claude-Context. Use for "resume research", "where was I", "pick up where I left off", "load research context".
 ---
 
 # Resume Research State (Desktop)
