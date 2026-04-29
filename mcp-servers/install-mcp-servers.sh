@@ -51,7 +51,7 @@ if ! command -v uv >/dev/null 2>&1; then
 fi
 require uv
 
-# 2. uv-installed MCP servers (idempotent — uv tool install is a no-op if same version)
+# 2. uv-installed MCP servers (idempotent -- uv tool install is a no-op if same version)
 log "Installing arxiv-mcp-server"
 uv tool install arxiv-mcp-server || warn "arxiv-mcp-server install returned non-zero (may already be installed)"
 
@@ -62,13 +62,13 @@ log "Installing paper-mcp"
 uv tool install paper-mcp || warn "paper-mcp install returned non-zero"
 
 # paper-search-mcp is invoked via `uv run --with paper-search-mcp` so it doesn't need a
-# global install — first run will fetch and cache it.
+# global install -- first run will fetch and cache it.
 
 # 3. Sci-Hub-MCP-Server (git clone)
 SCIHUB_DIR="${TARGET_DIR}/Sci-Hub-MCP-Server"
 if [[ ! -d "${SCIHUB_DIR}/.git" ]]; then
   log "Cloning Sci-Hub-MCP-Server"
-  git clone https://github.com/JackKuo666/Sci-Hub-MCP-Server.git "${SCIHUB_DIR}" || warn "clone failed — set this up manually if you need scihub"
+  git clone https://github.com/JackKuo666/Sci-Hub-MCP-Server.git "${SCIHUB_DIR}" || warn "clone failed -- set this up manually if you need scihub"
 else
   log "Sci-Hub-MCP-Server already cloned"
 fi
@@ -81,7 +81,7 @@ if [[ -d "${UPA_SRC}" ]]; then
   mkdir -p "${UPA_DST}"
   cp -r "${UPA_SRC}/." "${UPA_DST}/"
 else
-  warn "university-paper-access source missing in pack — skipping"
+  warn "university-paper-access source missing in pack -- skipping"
 fi
 
 # 5. obsidian-wrapper.js
@@ -95,11 +95,11 @@ if [[ -f "${OBS_SRC}" ]]; then
   if [[ ! -f package.json ]]; then
     npm init -y >/dev/null
   fi
-  # mcp-obsidian is the actual MCP server we wrap — required, not optional.
+  # mcp-obsidian is the actual MCP server we wrap -- required, not optional.
   npm install --silent @modelcontextprotocol/sdk node-fetch mcp-obsidian || warn "npm install of obsidian wrapper deps returned non-zero"
   popd >/dev/null
 else
-  warn "obsidian-wrapper.js missing in pack — skipping"
+  warn "obsidian-wrapper.js missing in pack -- skipping"
 fi
 
 # 6. Merge MCP config into ~/.claude.json

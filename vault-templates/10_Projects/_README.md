@@ -1,15 +1,15 @@
 # 10_Projects
 
-PARA-style **active projects** — work with a defined goal and an end. Each project is a folder; each folder has at minimum an `overview.md` (the project's MOC — Map of Content).
+PARA-style **active projects** -- work with a defined goal and an end. Each project is a folder; each folder has at minimum an `overview.md` (the project's MOC -- Map of Content).
 
 ## Layout
 
 ```
 10_Projects/
 ├── <project-slug>/
-│   ├── overview.md        ← project MOC: status, scope, deliverables, citekeys
-│   ├── runs/              ← experiment runs (timestamped)
-│   ├── notes/             ← drafts, design docs, meeting notes
+│   ├── overview.md        <- project MOC: status, scope, deliverables, citekeys
+│   ├── runs/              <- experiment runs (timestamped)
+│   ├── notes/             <- drafts, design docs, meeting notes
 │   └── figures/
 └── ...
 ```

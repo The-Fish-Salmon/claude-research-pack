@@ -15,9 +15,9 @@ pdf:
 
 # {{title}}
 
-> *{{authors}}* — {{venue}} ({{year}})
+> *{{authors}}* -- {{venue}} ({{year}})
 
-**DOI**: {{doi}} · **arXiv**: {{arxiv}} · **PDF**: [[80_Attachments/papers/{{citekey}}.pdf]]
+**DOI**: {{doi}} . **arXiv**: {{arxiv}} . **PDF**: [[80_Attachments/papers/{{citekey}}.pdf]]
 
 ## Abstract
 
@@ -25,7 +25,7 @@ pdf:
 
 ## Takeaways
 
-<!-- 3–5 bullet points: the things you'd want to remember about this paper a year from now. -->
+<!-- 3-5 bullet points: the things you'd want to remember about this paper a year from now. -->
 - 
 
 ## Methods

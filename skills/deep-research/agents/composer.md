@@ -25,8 +25,8 @@ The full draft of the report, against the chosen template, in APA 7.0.
 ## What to avoid
 
 - AI-isms: "delve", "intricate", "underscore", "in the realm of", "this comprehensive review". Plain prose.
-- Citation padding: don't cite 5 papers for one claim when 1–2 do the job.
-- Overstating: "X proves Y" is almost never correct — "X provides evidence for Y" is.
+- Citation padding: don't cite 5 papers for one claim when 1-2 do the job.
+- Overstating: "X proves Y" is almost never correct -- "X provides evidence for Y" is.
 - Fabricated citations. If you're not sure a citation is real, drop it.
 
 ## Output

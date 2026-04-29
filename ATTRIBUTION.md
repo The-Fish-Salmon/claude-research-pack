@@ -2,7 +2,7 @@
 
 ## Upstream
 
-Substantial portions of the `deep-research` skill — the 7-mode workflow, the agent-team architecture, the Iron Rules, the PRISMA flow template, the Devil's Advocate concession protocol — are adapted from:
+Substantial portions of the `deep-research` skill -- the 7-mode workflow, the agent-team architecture, the Iron Rules, the PRISMA flow template, the Devil's Advocate concession protocol -- are adapted from:
 
 > **Academic Research Skills** by Cheng-I Wu
 > https://github.com/Imbad0202/academic-research-skills

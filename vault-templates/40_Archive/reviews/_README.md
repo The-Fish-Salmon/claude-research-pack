@@ -6,4 +6,4 @@ Naming: `YYYY-MM-DD-auto-review.md` (or `YYYY-MM-DD-<slug>-review.md` for projec
 
 The latest report is summarized to one line and mirrored into `~/.claude/projects/.../memory/review_latest.md` so SessionStart can surface it without loading the whole report.
 
-Treat reports as immutable — don't edit them after the fact. If a finding is resolved, log it in the project's `overview.md`, not by editing the original review.
+Treat reports as immutable -- don't edit them after the fact. If a finding is resolved, log it in the project's `overview.md`, not by editing the original review.

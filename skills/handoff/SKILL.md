@@ -1,31 +1,31 @@
 ---
 name: handoff
 description: Capture a structured handoff snapshot of the current session so the next chat can pick up where this one left off. Writes to the Claude Code memory dir (handoff_latest.md) and mirrors to the user's Obsidian vault inbox if OBSIDIAN_VAULT_PATH is set. Use when the user types /handoff, says "handoff", "switch chats", "save context before compact", or asks you to checkpoint before walking away.
-argument-hint: [optional focus — e.g. "drt voltage sweep", "phase 4 next steps"]
+argument-hint: [optional focus -- e.g. "drt voltage sweep", "phase 4 next steps"]
 ---
 
 # Manual Session Handoff
 
-This skill captures everything the next session needs to resume work. It supplements `/compact` — `/compact` summarizes the conversation lossily; this writes durable, structured state.
+This skill captures everything the next session needs to resume work. It supplements `/compact` -- `/compact` summarizes the conversation lossily; this writes durable, structured state.
 
 ## Resolve paths first
 
-- **Memory dir** — the `memory/` sibling next to the current session's transcript. The Claude Code path is `~/.claude/projects/{encoded-cwd}/memory/`. Use `~` (the user's home dir); never assume a specific username. `{encoded-cwd}` is the working directory with `/`, `:`, and `\` replaced by `-`.
-- **Vault root** — read `$OBSIDIAN_VAULT_PATH`. If unset, skip the vault mirror step and tell the user once at the end.
-- **Active project slug** — read `$ACTIVE_PROJECT` if set; otherwise scan `${OBSIDIAN_VAULT_PATH}/10_Projects/*/overview.md` for `status: active` and pick the first match. If none match, omit the active-project line.
+- **Memory dir** -- the `memory/` sibling next to the current session's transcript. The Claude Code path is `~/.claude/projects/{encoded-cwd}/memory/`. Use `~` (the user's home dir); never assume a specific username. `{encoded-cwd}` is the working directory with `/`, `:`, and `\` replaced by `-`.
+- **Vault root** -- read `$OBSIDIAN_VAULT_PATH`. If unset, skip the vault mirror step and tell the user once at the end.
+- **Active project slug** -- read `$ACTIVE_PROJECT` if set; otherwise scan `${OBSIDIAN_VAULT_PATH}/10_Projects/*/overview.md` for `status: active` and pick the first match. If none match, omit the active-project line.
 
 ## How to execute
 
-1. **Build the handoff content yourself** — do NOT delegate this to a subagent. The current session has the context; a fresh agent would not.
+1. **Build the handoff content yourself** -- do NOT delegate this to a subagent. The current session has the context; a fresh agent would not.
 2. Collect the following from the conversation + live tools:
-   - **Current focus** — one paragraph: what are we working on *right now*?
-   - **Focus arg** — if the user passed `$ARGUMENTS`, lead with that
-   - **Recent decisions** — anything the user approved or steered (look for "yes", "do it that way", corrections)
-   - **Open questions** — unresolved items blocking progress
-   - **Files touched this session** — from your tool-call memory, list the last ~10 Read/Edit/Write paths
-   - **Active project state** — read `${OBSIDIAN_VAULT_PATH}/10_Projects/{active-slug}/overview.md` frontmatter, the latest note in `runs/`, and `~/.claude/projects/{encoded-cwd}/memory/MEMORY.md` if relevant
-   - **In-progress TODOs** — from the current TodoWrite list
-   - **Next step** — one sentence: what should the next session do first?
+   - **Current focus** -- one paragraph: what are we working on *right now*?
+   - **Focus arg** -- if the user passed `$ARGUMENTS`, lead with that
+   - **Recent decisions** -- anything the user approved or steered (look for "yes", "do it that way", corrections)
+   - **Open questions** -- unresolved items blocking progress
+   - **Files touched this session** -- from your tool-call memory, list the last ~10 Read/Edit/Write paths
+   - **Active project state** -- read `${OBSIDIAN_VAULT_PATH}/10_Projects/{active-slug}/overview.md` frontmatter, the latest note in `runs/`, and `~/.claude/projects/{encoded-cwd}/memory/MEMORY.md` if relevant
+   - **In-progress TODOs** -- from the current TodoWrite list
+   - **Next step** -- one sentence: what should the next session do first?
 
 3. **Write two files** using the Write tool:
 
@@ -58,15 +58,15 @@ One short line: "Handoff written: `handoff_latest.md` + vault mirror. Focus: *$A
 
 If the vault mirror was skipped (no `$OBSIDIAN_VAULT_PATH`), say so in the same line.
 
-Do not dump the full handoff content back into chat — that defeats the purpose.
+Do not dump the full handoff content back into chat -- that defeats the purpose.
 
 ## Handoff note template
 
 ```markdown
-# Handoff — {timestamp}
+# Handoff -- {timestamp}
 
 **Focus:** {$ARGUMENTS or "general session state"}
-**Active project:** {slug — status=, latest run=}
+**Active project:** {slug -- status=, latest run=}
 **CWD:** {current working dir}
 
 ## Current focus
@@ -97,6 +97,6 @@ Do not dump the full handoff content back into chat — that defeats the purpose
 
 ## Notes
 
-- If the user types `/handoff` with no args, still write the handoff — use "general session state" as focus.
+- If the user types `/handoff` with no args, still write the handoff -- use "general session state" as focus.
 - The PreCompact hook (at `~/.claude/hooks/precompact-handoff.py`) writes a lighter version automatically on `/compact`. `/handoff` is for when the user wants a *richer*, human-curated snapshot.
-- Never delete history in `~/.claude/projects/{encoded-cwd}/memory/handoffs/` — it's cheap and sometimes rescuing.
+- Never delete history in `~/.claude/projects/{encoded-cwd}/memory/handoffs/` -- it's cheap and sometimes rescuing.

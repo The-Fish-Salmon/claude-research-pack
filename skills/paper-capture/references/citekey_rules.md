@@ -4,7 +4,7 @@ Format: `{firstauthor-lastname-lower}{year}{first-content-word-of-title}`
 
 ## Construction
 
-1. **First author last name**, lowercased, ASCII-folded (`Müller` → `muller`, `O'Brien` → `obrien`).
+1. **First author last name**, lowercased, ASCII-folded (`Müller` -> `muller`, `O'Brien` -> `obrien`).
 2. **Year** as 4 digits.
 3. **First content word of the title**, lowercased, ASCII-folded. Drop these stopwords if they're first: `a`, `an`, `the`, `on`, `of`, `for`, `in`, `to`, `with`, `from`, `by`, `into`, `at`. If the title starts with a number, use the next content word.
 

@@ -44,4 +44,4 @@ tags: []
 
 ## Status updates
 
-- {{date:YYYY-MM-DD}} — created, scoping.
+- {{date:YYYY-MM-DD}} -- created, scoping.

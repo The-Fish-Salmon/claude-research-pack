@@ -51,7 +51,7 @@ PS> .\install-mcp-servers.ps1 -Target Desktop  # %APPDATA%\Claude\claude_desktop
 Same six steps as the bash version, but:
 
 - `uv` is installed via `irm https://astral.sh/uv/install.ps1 | iex` instead of curl.
-- JSON merge uses PowerShell native `ConvertFrom-Json` / `ConvertTo-Json` — **no
+- JSON merge uses PowerShell native `ConvertFrom-Json` / `ConvertTo-Json` -- **no
   `jq` dependency on Windows.**
 - Pack entries overwrite same-named ones (matches `jq -s '.[0] * .[1]'` behavior).
 
@@ -68,16 +68,16 @@ OBSIDIAN_API_KEY       # from the Obsidian "Local REST API" plugin
 ```
 
 WSL: add to `~/.bashrc`. Windows: use `setx` (persistent) or PowerShell profile.
-For Claude Desktop, `setx` requires a sign-out / sign-in to take effect — Desktop
+For Claude Desktop, `setx` requires a sign-out / sign-in to take effect -- Desktop
 GUI apps don't read shell-local vars.
 
 ## Pinned versions
 
 Tested against:
-- `arxiv-mcp-server` — latest on PyPI as of 2026-04
-- `semanticscholar-mcp-server` — latest on PyPI as of 2026-04
-- `paper-search-mcp` — latest on PyPI as of 2026-04
-- `paper-mcp` — latest on PyPI as of 2026-04
+- `arxiv-mcp-server` -- latest on PyPI as of 2026-04
+- `semanticscholar-mcp-server` -- latest on PyPI as of 2026-04
+- `paper-search-mcp` -- latest on PyPI as of 2026-04
+- `paper-mcp` -- latest on PyPI as of 2026-04
 
 If a server's API changes, you may need to update the corresponding template under
 `settings/`.
@@ -93,7 +93,7 @@ claude mcp list
 
 ### Path C
 
-Open Claude Desktop → Settings → Connections → check that all seven MCP servers are
+Open Claude Desktop -> Settings -> Connections -> check that all seven MCP servers are
 green. If a server is red, click it for the launch error log.
 
 ## Schema differences (Claude Code vs Claude Desktop)

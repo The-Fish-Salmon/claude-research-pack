@@ -152,7 +152,7 @@ async def _search_openalex(query: str, limit: int = 10) -> List[Dict[str, Any]]:
 
 
 def _reconstruct_abstract(inverted_index: dict | None) -> str:
-    """OpenAlex stores abstracts as inverted indexes — reconstruct them."""
+    """OpenAlex stores abstracts as inverted indexes -- reconstruct them."""
     if not inverted_index:
         return ""
     word_positions = []
@@ -309,7 +309,7 @@ async def _resolve_pdf_url(doi: str, known_oa_url: str = "") -> Optional[str]:
     if oa:
         return oa
 
-    # 3. Resolve DOI → publisher URL → transform to PDF URL
+    # 3. Resolve DOI -> publisher URL -> transform to PDF URL
     if not doi:
         return None
     try:
@@ -549,7 +549,7 @@ async def download_paper(
     Download a paper PDF using university network access.
 
     Tries multiple sources in order:
-    1. arXiv (if arxiv_id provided — always free)
+    1. arXiv (if arxiv_id provided -- always free)
     2. Open-access PDF from Semantic Scholar / OpenAlex / Unpaywall
     3. Direct publisher download via university network (IP-based auth)
 
@@ -680,7 +680,7 @@ async def get_references(doi: str, limit: int = 20) -> Dict[str, Any]:
     """
     Get the reference list (bibliography) of a paper.
 
-    Useful for citation chaining — finding related papers from a known good paper.
+    Useful for citation chaining -- finding related papers from a known good paper.
 
     Args:
         doi: DOI of the paper whose references you want.
