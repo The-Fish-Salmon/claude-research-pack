@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stop hook — persist unfinished TodoWrite items to todos_latest.md so the next
+"""Stop hook -- persist unfinished TodoWrite items to todos_latest.md so the next
 session can resurface them.
 
 Path resolution (cross-platform, no hardcoded user paths):
@@ -97,7 +97,7 @@ session: {session_id}
 
 """ + "\n".join(unfinished) + """
 
-_Persisted by ~/.claude/hooks/stop-persist-todos.py — delete when resolved._
+_Persisted by ~/.claude/hooks/stop-persist-todos.py -- delete when resolved._
 """
     out.write_text(body, encoding="utf-8")
     return 0

@@ -70,9 +70,9 @@ def main() -> int:
 
     lines = ["[paper-mention-detect] Detected paper references not yet in your vault:"]
     for d in new_dois:
-        lines.append(f"  - DOI: {d}  →  /capture-paper {d}")
+        lines.append(f"  - DOI: {d}  ->  /capture-paper {d}")
     for a in new_arxivs:
-        lines.append(f"  - arXiv: {a}  →  /capture-paper arXiv:{a}")
+        lines.append(f"  - arXiv: {a}  ->  /capture-paper arXiv:{a}")
     lines.append("(disable: set PAPER_MENTION_HOOK=off in your env)")
 
     output = {

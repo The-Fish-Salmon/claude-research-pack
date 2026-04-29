@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Status line — tiny snapshot of project state for the Claude Code bottom bar.
+# Status line -- tiny snapshot of project state for the Claude Code bottom bar.
 # Output: single line, format:
 #   <active-project> | review: <age> | todos: <n> | mem: <n>
 #

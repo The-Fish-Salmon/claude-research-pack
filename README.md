@@ -168,8 +168,16 @@ PS> .\scripts\setup.ps1 -Mode Desktop   # Path C
 
 ## Versions and provenance
 
-v2.0 — adds Path B (Windows native) and Path C (Claude Desktop). v1.0 (Path A only)
-remains supported by leaving the WSL tree unchanged.
+- **v4.0** — adds local-PDF ingestion (`ingest-pdf`), interactive co-pilot
+  (`research-copilot`), mandatory scope confirmation + post-composition
+  citation pre-flight in `academic-deep-research`, and a `next-action` mode
+  in `lit-status`.
+- **v3.0** — cross-device research continuity for Path C
+  (`capture-research-state`, `resume-research-state`, `sync-check`,
+  `paper-map` + `tools/research_sync_agent.py`).
+- **v2.0** — adds Path B (Windows native) and Path C (Claude Desktop) on
+  top of the original Path A WSL build.
+- **v1.0** — Path A only (Claude Code on WSL).
 
 Built against the upstream `Imbad0202/academic-research-skills` v3.6.5 (April 2026).
 

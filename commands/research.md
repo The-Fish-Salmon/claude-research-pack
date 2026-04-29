@@ -1,5 +1,5 @@
 ---
-description: Run a deep-research workflow — multi-mode literature discovery, synthesis, fact-check, or systematic review. Lands findings in your Obsidian vault.
+description: Run a deep-research workflow -- multi-mode literature discovery, synthesis, fact-check, or systematic review. Lands findings in your Obsidian vault.
 argument-hint: [--mode quick|full|lit-review|fact-check|socratic|systematic-review|review] {topic or question}
 ---
 
@@ -19,11 +19,11 @@ Invoke the `deep-research` skill on the topic in `$ARGUMENTS`.
 
 ## Output to user
 
-A short summary in chat (≤200 words):
+A short summary in chat (<=200 words):
 - Mode chosen.
 - Number of papers found / read / captured.
 - Path to the Inbox draft note.
 - Any Devil's Advocate or Ethics flags raised.
 - Suggested next action (promote draft, capture additional papers, refine question).
 
-The full deliverable lives in the Inbox note — don't dump it back into chat.
+The full deliverable lives in the Inbox note -- don't dump it back into chat.

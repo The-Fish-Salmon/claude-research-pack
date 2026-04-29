@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""SessionStart hook — emits JSON on stdout to inject recent handoff, latest
+"""SessionStart hook -- emits JSON on stdout to inject recent handoff, latest
 auto-review summary, and carried-over TODOs as additionalContext.
 
 Path resolution: the SessionStart payload includes `transcript_path`. The memory
-dir is the `memory/` sibling next to the transcript. Cross-platform — no
+dir is the `memory/` sibling next to the transcript. Cross-platform -- no
 hardcoded user paths.
 """
 from __future__ import annotations
