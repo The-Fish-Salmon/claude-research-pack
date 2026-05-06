@@ -117,10 +117,14 @@ templates.
 
 ---
 
-## Install
+## Install + use
 
-See [INSTALL_WINDOWS.md](INSTALL_WINDOWS.md) for the full decision tree and
-walkthroughs. The router is:
+- [INSTALL_WINDOWS.md](INSTALL_WINDOWS.md) -- full decision tree and walkthroughs.
+- [USAGE.md](USAGE.md) -- how to actually use the pack after install: trigger
+  prompts for deep research, auto-download papers, fine-tune search, ingest
+  local PDFs, force quote-backed answers.
+
+The router is:
 
 ```powershell
 PS> .\scripts\setup.ps1 -Mode WSL       # Path A (default)
