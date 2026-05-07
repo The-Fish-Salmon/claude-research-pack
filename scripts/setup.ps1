@@ -70,21 +70,175 @@ switch ($Mode) {
     'Native' {
         Info 'Path B -- installing Claude Code on Windows (native).'
 
-        $claudePath = Get-Command claude -ErrorAction SilentlyContinue
-        if (-not $claudePath) {
-            Warn 'Claude Code CLI not on PATH. Install Claude Code for Windows from https://claude.ai/code first, then rerun.'
-        } else {
-            Info "Claude Code: $($claudePath.Path)"
+        # ---- Pre-flight: winget + auto-install missing prereqs ----
+        $winget = Get-Command winget -ErrorAction SilentlyContinue
+        if (-not $winget) {
+            Fail "winget not on PATH. Install 'App Installer' from the Microsoft Store, then re-run this script."
         }
 
+        $claudePath = Get-Command claude -ErrorAction SilentlyContinue
+        if (-not $claudePath) {
+            Fail 'Claude Code CLI not on PATH. Install Claude Code for Windows from https://claude.ai/code, open a fresh PowerShell, then re-run this script.'
+        }
+        Info "Claude Code: $($claudePath.Path)"
+
+        function Refresh-Path {
+            # Pick up newly-installed tools without restarting the shell.
+            $machinePath = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine')
+            $userPath    = [System.Environment]::GetEnvironmentVariable('PATH', 'User')
+            $env:PATH = "$machinePath;$userPath"
+        }
+
+        $tools = @(
+            @{ name = 'python'; wingetId = 'Python.Python.3.12'; verifyCmd = 'py' },
+            @{ name = 'node';   wingetId = 'OpenJS.NodeJS.LTS';  verifyCmd = 'node' },
+            @{ name = 'git';    wingetId = 'Microsoft.Git';      verifyCmd = 'git' }
+        )
+        foreach ($t in $tools) {
+            if (Get-Command $t.verifyCmd -ErrorAction SilentlyContinue) {
+                Info "$($t.name) already present"
+            } else {
+                Info "Installing $($t.name) via winget ($($t.wingetId))"
+                & winget install -e --id $t.wingetId --accept-source-agreements --accept-package-agreements --silent
+                if ($LASTEXITCODE -ne 0) {
+                    Fail "winget failed to install $($t.name). Install it manually and re-run."
+                }
+                Refresh-Path
+                if (-not (Get-Command $t.verifyCmd -ErrorAction SilentlyContinue)) {
+                    Fail "$($t.name) installed but $($t.verifyCmd) still not on PATH. Open a fresh PowerShell window and re-run."
+                }
+            }
+        }
+
+        # ---- Wizard: detect / prompt for the five env vars ----
+        Info 'Reading defaults from your existing tools and config...'
+
+        # Default vault path: most-recent vault from Obsidian's recent-vaults file.
+        $defaultVault = $null
+        $obsidianJson = Join-Path $env:APPDATA 'obsidian\obsidian.json'
+        if (Test-Path $obsidianJson) {
+            try {
+                $oj = Get-Content -Raw -Path $obsidianJson | ConvertFrom-Json
+                $vaults = $oj.vaults
+                $best = $null; $bestTime = 0
+                foreach ($p in $vaults.PSObject.Properties) {
+                    $v = $p.Value
+                    if ($v.ts -and ($v.ts -gt $bestTime)) {
+                        $bestTime = $v.ts
+                        $best = $v.path
+                    }
+                }
+                if ($best) { $defaultVault = $best }
+            } catch { Warn "Could not parse $obsidianJson; will prompt." }
+        }
+        $defaultVaultDisplay = if ($defaultVault) { $defaultVault } else { (Join-Path $env:USERPROFILE 'Documents\MyVault') }
+
+        # Default Unpaywall email: git config user.email
+        $defaultEmail = ''
+        try { $defaultEmail = (& git config --global user.email 2>$null).Trim() } catch {}
+        if (-not $defaultEmail) { $defaultEmail = 'you@example.org' }
+
+        # Default paper download dir: D: if it exists, else %USERPROFILE%\papers.
+        $defaultPaperDir = if (Test-Path 'D:\') { 'D:\papers' } else { Join-Path $env:USERPROFILE 'papers' }
+
+        function Prompt-WithDefault {
+            param([string]$prompt, [string]$default)
+            $v = Read-Host "  $prompt [$default]"
+            if ([string]::IsNullOrWhiteSpace($v)) { return $default } else { return $v.Trim('"', "'") }
+        }
+
+        Write-Host '' ; Write-Host '== Configuration wizard ==' -ForegroundColor Cyan
+        $vault       = Prompt-WithDefault 'Obsidian vault path' $defaultVaultDisplay
+        $paperDir    = Prompt-WithDefault 'Paper download dir' $defaultPaperDir
+        $arxivDir    = Prompt-WithDefault 'arXiv cache dir'   (Join-Path $paperDir 'arxiv')
+        $email       = Prompt-WithDefault 'Unpaywall email'   $defaultEmail
+
+        # API key: try the plugin's data.json first.
+        $defaultKey = $null
+        $apiKeyFile = Join-Path $vault '.obsidian\plugins\obsidian-local-rest-api\data.json'
+        if (Test-Path $apiKeyFile) {
+            try {
+                $kj = Get-Content -Raw -Path $apiKeyFile | ConvertFrom-Json
+                if ($kj.apiKey) { $defaultKey = $kj.apiKey }
+            } catch {}
+        }
+        $defaultKeyDisplay = if ($defaultKey) { '<auto-detected from vault config>' } else { '<paste from Obsidian Local REST API plugin>' }
+        $apiKey = Prompt-WithDefault 'Obsidian REST API key' $defaultKeyDisplay
+        if ($apiKey -eq '<auto-detected from vault config>' -and $defaultKey) {
+            $apiKey = $defaultKey
+        }
+        if ($apiKey -eq '<paste from Obsidian Local REST API plugin>') {
+            Warn 'No API key set. Obsidian MCP integration will fail until you setx OBSIDIAN_API_KEY manually.'
+            $apiKey = ''
+        }
+
+        # ---- Apply env vars (setx for persistence + Set-Item for current shell) ----
+        Info 'Setting persistent env vars (setx) and exporting to current shell...'
+        $envPairs = @(
+            @{ k = 'OBSIDIAN_VAULT_PATH';  v = $vault },
+            @{ k = 'OBSIDIAN_API_KEY';     v = $apiKey },
+            @{ k = 'PAPER_DOWNLOAD_DIR';   v = $paperDir },
+            @{ k = 'ARXIV_STORAGE_PATH';   v = $arxivDir },
+            @{ k = 'UNPAYWALL_EMAIL';      v = $email }
+        )
+        foreach ($p in $envPairs) {
+            if ($p.v) {
+                & setx $p.k $p.v | Out-Null
+                Set-Item -Path "Env:$($p.k)" -Value $p.v
+                Info "  $($p.k) = $($p.v)"
+            }
+        }
+
+        # ---- Vault bootstrap ----
+        if ($vault -and (Test-Path $vault)) {
+            Info "Bootstrapping vault: $vault"
+            $vaultTemplates = Join-Path $PackDir 'vault-templates'
+            if (Test-Path $vaultTemplates) {
+                Get-ChildItem -Path $vaultTemplates | ForEach-Object {
+                    $dst = Join-Path $vault $_.Name
+                    if (Test-Path $dst) {
+                        # Recurse into existing folders, only copy missing files.
+                        Copy-Item -Recurse -Force:$false -Path "$($_.FullName)\*" -Destination $dst -ErrorAction SilentlyContinue
+                    } else {
+                        Copy-Item -Recurse -Force -Path $_.FullName -Destination $dst
+                    }
+                }
+                Info '  vault-templates copied (existing files left in place)'
+            } else {
+                Warn 'vault-templates/ not found in pack -- skipping bootstrap'
+            }
+
+            # Configure Obsidian app.json (attachments folder)
+            $appJsonPath = Join-Path $vault '.obsidian\app.json'
+            New-Item -ItemType Directory -Force -Path (Split-Path $appJsonPath) | Out-Null
+            $appObj = if (Test-Path $appJsonPath) {
+                Get-Content -Raw -Path $appJsonPath | ConvertFrom-Json
+            } else { [pscustomobject]@{} }
+            $appObj | Add-Member -NotePropertyName 'attachmentFolderPath' -NotePropertyValue '80_Attachments' -Force
+            $appObj | ConvertTo-Json -Depth 5 | Set-Content -Path $appJsonPath -Encoding UTF8
+            Info '  Obsidian attachments folder set to 80_Attachments'
+
+            # Configure templates plugin (core plugin)
+            $templatesJsonPath = Join-Path $vault '.obsidian\templates.json'
+            $tjObj = if (Test-Path $templatesJsonPath) {
+                Get-Content -Raw -Path $templatesJsonPath | ConvertFrom-Json
+            } else { [pscustomobject]@{} }
+            $tjObj | Add-Member -NotePropertyName 'folder' -NotePropertyValue '70_Templates' -Force
+            $tjObj | ConvertTo-Json -Depth 5 | Set-Content -Path $templatesJsonPath -Encoding UTF8
+            Info '  Obsidian templates folder set to 70_Templates'
+        } else {
+            Warn "Vault path '$vault' does not exist -- skipping vault bootstrap. Create the folder, then re-run setup."
+        }
+
+        # ---- Install skills, hooks, commands ----
         $ClaudeDir = Join-Path $env:USERPROFILE '.claude'
         New-Item -ItemType Directory -Force -Path (Join-Path $ClaudeDir 'skills')   | Out-Null
         New-Item -ItemType Directory -Force -Path (Join-Path $ClaudeDir 'hooks')    | Out-Null
         New-Item -ItemType Directory -Force -Path (Join-Path $ClaudeDir 'commands') | Out-Null
 
-        # 1. Skills (additive)
+        # Skills (now includes v5 ingest-pdf + research-copilot)
         Info "Copying skills -> $ClaudeDir\skills\"
-        foreach ($s in @('deep-research', 'paper-capture', 'lit-status', 'handoff')) {
+        foreach ($s in @('deep-research', 'paper-capture', 'lit-status', 'handoff', 'ingest-pdf', 'research-copilot')) {
             $src = Join-Path $PackDir "skills\$s"
             if (Test-Path $src) {
                 $dst = Join-Path $ClaudeDir "skills\$s"
@@ -94,21 +248,21 @@ switch ($Mode) {
             }
         }
 
-        # 2. Hooks (Python hooks are cross-platform; statusline uses .ps1 on Windows)
+        # Hooks (Python hooks are cross-platform; statusline uses .ps1 on Windows)
         Info "Copying hooks -> $ClaudeDir\hooks\"
         foreach ($h in @('precompact-handoff.py', 'session-start-context.py', 'stop-persist-todos.py', 'paper-mention-detect.py', 'statusline.ps1')) {
             $src = Join-Path $PackDir "hooks\$h"
             if (Test-Path $src) { Copy-Item -Force -Path $src -Destination (Join-Path $ClaudeDir "hooks\$h") }
         }
 
-        # 3. Commands
+        # Commands (now includes v5 ingest-pdf + copilot)
         Info "Copying slash commands -> $ClaudeDir\commands\"
-        foreach ($c in @('research.md', 'capture-paper.md', 'lit-map.md', 'status.md', 'port-to-vault.md')) {
+        foreach ($c in @('research.md', 'capture-paper.md', 'lit-map.md', 'status.md', 'port-to-vault.md', 'ingest-pdf.md', 'copilot.md')) {
             $src = Join-Path $PackDir "commands\$c"
             if (Test-Path $src) { Copy-Item -Force -Path $src -Destination (Join-Path $ClaudeDir "commands\$c") }
         }
 
-        # 4. MCP servers (PowerShell installer, target = Native)
+        # MCP servers (PowerShell installer, target = Native)
         Info 'Installing MCP servers (Native target)'
         & (Join-Path $PackDir 'mcp-servers\install-mcp-servers.ps1') -Target Native
         if ($LASTEXITCODE -ne 0) { Fail 'MCP install script returned non-zero -- see output above.' }
@@ -143,26 +297,49 @@ switch ($Mode) {
             $existing | ConvertTo-Json -Depth 50 | Set-Content -Path $targetPath -Encoding UTF8
         }
 
-        Info 'Path B setup complete. Next:'
-        @"
+        # ---- Self-test ----
+        $selftest = Join-Path $PackDir 'scripts\path-b-selftest.ps1'
+        if (Test-Path $selftest) {
+            Write-Host ''
+            & $selftest
+            $selftestExit = $LASTEXITCODE
+        } else {
+            Warn "scripts\path-b-selftest.ps1 not found -- skipping self-test."
+            $selftestExit = 0
+        }
 
-  1. Set env vars persistently (each opens in a NEW window after restart):
-       setx PAPER_DOWNLOAD_DIR    "D:\papers"
-       setx ARXIV_STORAGE_PATH    "D:\papers\arxiv"
-       setx UNPAYWALL_EMAIL       "you@example.org"
-       setx OBSIDIAN_VAULT_PATH   "C:\Users\<you>\Documents\MyVault"
-       setx OBSIDIAN_API_KEY      "<from Obsidian Local REST API plugin>"
+        Write-Host ''
+        if ($selftestExit -eq 0) {
+            Info 'Path B install COMPLETE.'
+            @"
 
-  2. Copy vault-templates\* into your Obsidian vault root (idempotent -- won't clobber existing files).
+  Open a fresh PowerShell window (env vars need it) and try:
+    claude
+    /status
+    /research --mode quick "ion-gated transistors"
+    /ingest-pdf D:\downloads\some-paper.pdf
+    /copilot
+    /lit-map summary
 
-  3. Restart your shell, then in any project run:
-       claude
-       /status
-       /research --mode quick "test query"
-       /capture-paper 10.1038/s41586-021-03819-2
+  Re-run the self-test any time:
+    .\scripts\path-b-selftest.ps1
 
-  See INSTALL_WINDOWS.md (Path B) for troubleshooting.
+  Troubleshooting: see INSTALL_WINDOWS.md (Path B).
 "@ | Write-Host
+        } else {
+            Warn 'Path B install completed with self-test failures. See [fail] lines above.'
+            @"
+
+  The pack is mostly installed -- only the self-test caught issues. Common
+  causes:
+    - Env vars not yet visible to a fresh shell  -> open a new PowerShell window.
+    - Obsidian REST API unreachable              -> launch Obsidian, enable Local REST API plugin.
+    - claude mcp list missing servers            -> rerun ``setup.ps1 -Mode Native``.
+
+  Re-run the self-test after fixing:
+    .\scripts\path-b-selftest.ps1
+"@ | Write-Host
+        }
     }
 
     # ----------------------------------------------------------------------

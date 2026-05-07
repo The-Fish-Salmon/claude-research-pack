@@ -17,11 +17,13 @@ you'll use.
 | **Iron Rules + citation discipline** | ✅ | ✅ | ✅ |
 | **Paper capture into vault** | ✅ | ✅ | ✅ |
 | **Cross-device research continuity** (snapshot/resume via synced vault) | ❌ | ❌ | ✅ -- v3 |
-| **Local-PDF ingestion** (drop a PDF, get a 30_Literature note) | ❌ | ❌ | ✅ -- v4 |
-| **Interactive research co-pilot loop** (orient/question/suggest/synthesize/escalate) | ❌ | ❌ | ✅ -- v4 |
-| **Mandatory scoping confirmation + citation pre-flight in deep-research** | ❌ | ❌ | ✅ -- v4 |
-| **Most-tested** | ✅ | new in v2 | new in v2 / v3 / v4 |
-| **Setup time** | 30-45 min | 30-45 min | 20-30 min |
+| **Local-PDF ingestion** (drop a PDF, get a 30_Literature note) | ❌ | ✅ -- v5 | ✅ -- v4 |
+| **Interactive research co-pilot loop** (orient/question/suggest/synthesize/escalate) | ❌ | ✅ -- v5 | ✅ -- v4 |
+| **Mandatory scoping confirmation + citation pre-flight in deep-research** | ❌ | ✅ -- v5 | ✅ -- v4 |
+| **Auto-install prereqs via winget + auto-detect vault & API key** | ❌ | ✅ -- v5 | ❌ |
+| **Post-install self-test** | ❌ | ✅ -- v5 | ❌ |
+| **Most-tested** | ✅ | new in v2 / v5 | new in v2 / v3 / v4 |
+| **Setup time** | 30-45 min | **~5 min** (after Claude Code) | 20-30 min |
 
 **Decision tree:**
 
@@ -225,14 +227,17 @@ If all five pass, Path A is up.
 
 ### Path B prerequisites
 
+Just one manual install:
+
 | Tool | How |
 |---|---|
 | **Claude Code for Windows** | https://claude.ai/code -> install for Windows |
-| **Python 3.12** | https://www.python.org/downloads/ -> check "Add python.exe to PATH" + "Install launcher for all users" |
-| **Node.js LTS** (>= 20) | https://nodejs.org/ |
-| **Git for Windows** | https://git-scm.com/download/win |
 
-No WSL needed.
+That's it. Python 3.12, Node LTS, Git for Windows, and `uv` are all
+auto-installed by `setup.ps1` via `winget` (Windows 10/11's built-in package
+manager). Obsidian Desktop is also needed if you want vault integration --
+install from https://obsidian.md and enable the **Local REST API** community
+plugin once.
 
 ### Path B install
 
@@ -240,70 +245,84 @@ No WSL needed.
 PS> .\scripts\setup.ps1 -Mode Native
 ```
 
-What it does:
+What it does (v5):
 
-1. Verifies Windows prereqs (Python launcher, Node, git).
-2. Copies `skills\`, hooks (Python + `statusline.ps1`), and `commands\` into
-   `%USERPROFILE%\.claude\`.
-3. Calls `mcp-servers\install-mcp-servers.ps1`, which:
-   - Installs `uv` if missing (`irm https://astral.sh/uv/install.ps1 | iex`).
-   - `uv tool install`s the PyPI MCP servers.
-   - `git clone`s Sci-Hub-MCP-Server into `%USERPROFILE%\.claude\mcp-servers\`.
-   - Copies the bundled `university-paper-access` server.
-   - `npm install`s the Obsidian wrapper deps.
-   - Merges `settings\claude.windows.template.json` into `%USERPROFILE%\.claude.json`
-     using PowerShell's native `ConvertFrom-Json` / `ConvertTo-Json` (no `jq`
-     dependency on Windows).
-4. Merges `settings\settings.windows.template.json` into
-   `%USERPROFILE%\.claude\settings.json`.
+1. **Pre-flight via winget.** Auto-installs missing prereqs: Python 3.12,
+   Node LTS, Git for Windows, uv. Skip-if-present, idempotent. Hard-fails
+   with a one-line fix if winget itself is absent ("install App Installer
+   from the Microsoft Store").
+2. **Configuration wizard.** One prompt block. Defaults are auto-detected
+   from existing config:
+   - Vault path -- pulled from `%APPDATA%\obsidian\obsidian.json` (recent
+     vaults).
+   - API key -- pulled from `<vault>\.obsidian\plugins\obsidian-local-rest-api\data.json`.
+   - Unpaywall email -- pulled from `git config --global user.email`.
+   - Paper download dir -- defaults to `D:\papers` if D: exists, else
+     `%USERPROFILE%\papers`.
+   You confirm or override each. Hit Enter to accept defaults.
+3. **Env vars (transactional).** Runs `setx` for the five vars **and** sets
+   them in the current shell, so the rest of the install can use them
+   immediately.
+4. **Vault bootstrap.** Copies `vault-templates\*` into your vault
+   (idempotent -- existing files are left alone). Writes
+   `<vault>\.obsidian\app.json` to set attachments folder = `80_Attachments`
+   and the templates plugin folder = `70_Templates`. No more manual clicks
+   in Obsidian's Settings.
+5. **Skills + hooks + commands.** Copies six skills (deep-research,
+   paper-capture, lit-status, handoff, ingest-pdf, research-copilot), five
+   hooks, seven slash commands into `%USERPROFILE%\.claude\`.
+6. **MCP servers.** Calls `install-mcp-servers.ps1 -Target Native`.
+7. **Settings merge.** Merges `settings\settings.windows.template.json`
+   into `%USERPROFILE%\.claude\settings.json`.
+8. **Self-test.** Runs `scripts\path-b-selftest.ps1` and reports green/red
+   per check (claude mcp list, settings parse, env-var visibility, Obsidian
+   REST API reachability).
 
-Idempotent. The pre-existing `%USERPROFILE%\.claude.json` is backed up before
-overwrite (`*.bak.<timestamp>`).
+Idempotent. Re-run any time -- safe.
 
-### Path B env vars
+### Path B re-running the self-test
 
-Set persistently with `setx` (each opens in a NEW window after restart):
+Any time you suspect something drifted:
 
 ```powershell
+PS> .\scripts\path-b-selftest.ps1
+```
+
+Six checks; exits 0 if all green.
+
+### Path B smoke tests (after install)
+
+Open a fresh PowerShell window (env vars need it) and try:
+
+```text
+> claude
+/status
+/research --mode quick "ion-gated transistors for reservoir computing"
+/ingest-pdf D:\downloads\some-paper.pdf
+/copilot
+/lit-map summary
+/capture-paper 10.1038/s41586-021-03819-2
+```
+
+`/research` will pause at `=== SCOPE CONFIRMATION ===` -- reply `go` (or
+correct the scope first). Final draft ends with
+`Captured N citations; M re-verified, K flagged unverified.` (citation
+pre-flight).
+
+### Path B manual fallback
+
+If you ever need to set env vars by hand:
+
+```powershell
+PS> setx OBSIDIAN_VAULT_PATH   "C:\Users\<you>\Documents\MyVault"
+PS> setx OBSIDIAN_API_KEY      "<from Obsidian Local REST API plugin>"
 PS> setx PAPER_DOWNLOAD_DIR    "D:\papers"
 PS> setx ARXIV_STORAGE_PATH    "D:\papers\arxiv"
 PS> setx UNPAYWALL_EMAIL       "you@example.org"
-PS> setx OBSIDIAN_VAULT_PATH   "C:\Users\<you>\Documents\MyVault"
-PS> setx OBSIDIAN_API_KEY      "<from Obsidian plugin>"
 ```
 
-`setx` writes to the persistent user environment but does NOT update the current
-PowerShell session. **Open a fresh PowerShell window** before launching Claude
-Code.
-
-### Path B vault bootstrap
-
-```powershell
-PS> Copy-Item -Recurse -Force:$false `
-        -Path .\vault-templates\* `
-        -Destination $env:OBSIDIAN_VAULT_PATH
-```
-
-`Force:$false` respects existing files. Then in Obsidian:
-
-- Settings -> Files & Links -> Default location for new attachments -> `80_Attachments`.
-- Settings -> Templates -> Template folder location -> `70_Templates`.
-
-### Path B smoke tests
-
-Open a fresh PowerShell window and `claude` from any project:
-
-```text
-> claude mcp list
-/status
-/research --mode quick "ion-gated transistors for reservoir computing"
-/capture-paper 10.1038/s41586-021-03819-2
-/lit-map summary
-```
-
-Confirm `statusline.ps1` is producing the expected status string at the bottom of
-the Claude Code window. If you see only `?`, see Troubleshooting (statusline
-section).
+`setx` writes to the persistent user environment but does NOT update the
+current PowerShell session. **Open a fresh PowerShell window** afterwards.
 
 ---
 

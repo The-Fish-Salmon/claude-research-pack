@@ -1,6 +1,6 @@
 ---
 name: lit-status
-description: Query the user's Obsidian literature library -- counts by status, tags, projects, and citation links. Reports unread / under-read papers, papers cited in active projects but missing from the vault, and tag clusters. Use when the user asks "what have I read on X?", "what's in my library?", "what should I read next?", or invokes /lit-map.
+description: Query the Obsidian literature library: counts by status, tags, projects; orphans; gaps; reading queue. Use /lit-map or "what's in my library", "what should I read next".
 ---
 
 # Lit Status
@@ -32,6 +32,7 @@ The skill supports several report shapes; the slash command or invocation passes
 - **`gaps`** -- papers cited in projects but not captured.
 - **`orphans`** -- papers in library not linked to any project or MOC.
 - **`citation-map {citekey}`** -- for one paper, show which project notes reference it.
+- **`next-action`** -- "what should I read next?" Returns a single, prioritized next action in <=5 lines: the most-cited unread paper in the active project (or, if no active project, the most-recently-added unread paper), plus the exact slash command the user can run to act on it (typically `/capture-paper` or `/copilot synthesize {citekey1} {citekey2}`). Used by `research-copilot` for its Suggest move.
 
 ## Constraints
 

@@ -1,6 +1,6 @@
 ---
 name: deep-research
-description: Multi-mode academic research pipeline -- runs literature discovery, synthesis, fact-checking, or systematic review against your literature MCP servers and lands findings in your Obsidian vault. Use whenever the user asks to "research", "look into the literature on", "find papers on", "fact-check", "do a lit review", "do a systematic review", or asks an open-ended scholarly question. Adapted from Imbad0202/academic-research-skills (CC-BY-NC 4.0) for Claude Code.
+description: Citation-disciplined literature pipeline backed by paper MCP servers (semantic-scholar, arxiv, paper-search). Use for /research, lit review, fact-check, systematic review.
 ---
 
 # Deep Research
@@ -37,13 +37,53 @@ User can pass `--mode {name}` and a topic via slash command (`/research --mode l
 ## Phases (every mode runs through these in order)
 
 1. **Scoping** -- sharpen the research question, choose the mode, write a methodology blueprint.
-2. **Investigation** -- search the MCP servers in priority order (see below), download and read promising papers.
-3. **Analysis** -- synthesize across sources, run risk-of-bias on each, build a claim/evidence table.
-4. **Composition** -- draft the deliverable in the mode-appropriate format.
-5. **Review** -- editorial pass + ethics check + devil's advocate final pass.
-6. **Hand-off** -- write to vault `00_Inbox/research-{slug}-{YYYY-MM-DD}.md` via the `obsidian` MCP.
+2. **Scope confirmation** (mandatory pause; see Scope Confirmation Protocol below). Skip ONLY in `quick` and `fact-check` modes.
+3. **Investigation** -- search the MCP servers in priority order (see below), download and read promising papers. Spawn the parallel investigator sub-agents listed under "Spawning sub-agents".
+4. **Analysis** -- synthesize across sources, run risk-of-bias on each, build a claim/evidence table.
+5. **Composition** -- draft the deliverable in the mode-appropriate format.
+6. **Review** -- editorial pass + ethics check + devil's advocate final pass.
+7. **Citation pre-flight** (mandatory; see Citation Pre-flight Protocol below).
+8. **Hand-off** -- write to vault `00_Inbox/research-{slug}-{YYYY-MM-DD}.md` via the `obsidian` MCP.
 
 Skip phases that don't apply (e.g. `fact-check` skips composition).
+
+## Scope Confirmation Protocol (mandatory pause after Phase 1)
+
+In every mode EXCEPT `quick` and `fact-check`, after Phase 1 (Scoping) you MUST present the scope back to the user and wait for confirmation. Do not start Phase 3 (Investigation) until the user replies.
+
+Format:
+
+```
+=== SCOPE CONFIRMATION ===
+
+Before I search, here's how I'm reading your request:
+- Topic:        {one sentence}
+- Year range:   {YYYY-YYYY or "open"}
+- Languages:    {English / multilingual / etc.}
+- Inclusions:   {peer-reviewed lab, preprints OK, ...}
+- Exclusions:   {blog posts, retracted papers, ...}
+- Depth:        {quick / lit-review / full / systematic-review / review}
+- Time budget:  {e.g. 5-15 min for a quick run}
+
+Reply 'go' to proceed, or correct any of the above. I'll wait.
+```
+
+If the user's original request was genuinely vague (no topic, no scope at all), don't synthesize a scope -- drop into `socratic` mode instead.
+
+## Citation Pre-flight Protocol (mandatory before Phase 8 Hand-off)
+
+After Composition (Phase 5) and the Review pass (Phase 6), and before writing the final note to the vault:
+
+1. Walk every in-text citation in the draft. Extract the DOI / arXiv id / Semantic Scholar paperId for each.
+2. For each citation, call `mcp__semantic-scholar__get_semantic_scholar_paper_details` (or `mcp__paper-mcp__paper_get_metadata` as fallback).
+3. Compare the returned title/authors against what the draft claims:
+   - **Confirmed**: title + first-author both match -> mark `[verified]` internally.
+   - **Mismatch**: title doesn't match -- the draft cited the wrong DOI. Either fix the DOI (re-search Semantic Scholar) or replace the in-text reference with `[UNVERIFIED -- DOI mismatch]`.
+   - **404 / not-found**: re-resolve via title-author-year search; if that also fails, replace with `[UNVERIFIED -- could not re-confirm]`.
+4. Surface the count of unverified to the user in the final delivery line: `Captured N citations; M re-verified, K flagged unverified.`
+5. If K > 0, list each unverified citation in a `## Unverified Citations` section at the bottom of the draft, with what was attempted.
+
+Pre-flight is the integrity gate that catches the rare case where a sub-step of the pipeline (or the model itself) introduced a fabricated or mistyped DOI.
 
 ## MCP server priority order
 

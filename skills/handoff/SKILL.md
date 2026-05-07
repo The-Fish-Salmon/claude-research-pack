@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Capture a structured handoff snapshot of the current session so the next chat can pick up where this one left off. Writes to the Claude Code memory dir (handoff_latest.md) and mirrors to the user's Obsidian vault inbox if OBSIDIAN_VAULT_PATH is set. Use when the user types /handoff, says "handoff", "switch chats", "save context before compact", or asks you to checkpoint before walking away.
+description: Capture a structured handoff snapshot so the next chat can resume. Writes handoff_latest.md to the Claude Code memory dir and mirrors to the vault inbox. Use /handoff or "save context".
 argument-hint: [optional focus -- e.g. "drt voltage sweep", "phase 4 next steps"]
 ---
 

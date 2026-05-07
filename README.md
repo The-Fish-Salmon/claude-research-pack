@@ -21,10 +21,11 @@ Pick one based on which Claude product you want to drive:
 | **Iron Rules + citation discipline** | ✅ | ✅ | ✅ |
 | **Paper capture into vault** | ✅ | ✅ | ✅ |
 | **Cross-device research continuity** (snapshot/resume via synced vault) | ❌ | ❌ | ✅ -- v3 |
-| **Local-PDF ingestion** | ❌ | ❌ | ✅ -- v4 |
-| **Interactive research co-pilot loop** | ❌ | ❌ | ✅ -- v4 |
-| **Mandatory scope confirmation + citation pre-flight** | ❌ | ❌ | ✅ -- v4 |
-| **Setup time** | 30-45 min | 30-45 min | 20-30 min |
+| **Local-PDF ingestion** | ❌ | ✅ -- v5 | ✅ -- v4 |
+| **Interactive research co-pilot loop** | ❌ | ✅ -- v5 | ✅ -- v4 |
+| **Mandatory scope confirmation + citation pre-flight** | ❌ | ✅ -- v5 | ✅ -- v4 |
+| **One-command install (winget + auto-detect + self-test)** | ❌ | ✅ -- v5 | ❌ |
+| **Setup time** | 30-45 min | **~5 min** (after Claude Code) | 20-30 min |
 
 Decision tree and capability matrix in [INSTALL_WINDOWS.md](INSTALL_WINDOWS.md).
 
@@ -172,10 +173,16 @@ PS> .\scripts\setup.ps1 -Mode Desktop   # Path C
 
 ## Versions and provenance
 
+- **v5.0** -- Path B (Windows-native Code) overhaul: one-command install
+  with winget pre-flight, auto-detect vault path + REST API key, automatic
+  vault bootstrap + Obsidian config, post-install self-test. Plus full
+  feature parity with Path C: `ingest-pdf`, `research-copilot`, mandatory
+  scoping, citation pre-flight, `lit-status next-action`. New slash
+  commands `/ingest-pdf` and `/copilot`.
 - **v4.0** -- adds local-PDF ingestion (`ingest-pdf`), interactive co-pilot
   (`research-copilot`), mandatory scope confirmation + post-composition
   citation pre-flight in `academic-deep-research`, and a `next-action` mode
-  in `lit-status`.
+  in `lit-status`. (Path C only at v4; ported to Path B in v5.)
 - **v3.0** -- cross-device research continuity for Path C
   (`capture-research-state`, `resume-research-state`, `sync-check`,
   `paper-map` + `tools/research_sync_agent.py`).
