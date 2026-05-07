@@ -87,16 +87,28 @@ Pre-flight is the integrity gate that catches the rare case where a sub-step of 
 
 ## MCP server priority order
 
-The investigator MUST try these in order and stop at the first success:
+The investigator MUST try these in the order below. The order is biased
+toward broad-source coverage and institutional full-text access -- arXiv is
+**only authoritative for preprints** and is missing most journal-published
+work (Nature, Science, ACS Nano, Adv. Materials, Applied Physics Letters,
+most of EE/MatSci, biology, chemistry). Do NOT default to arXiv-only
+searches.
 
-1. `semantic-scholar` -- best for metadata, paper resolution, citation graphs, abstract preview.
-2. `paper-search` -- multi-source unified search (arXiv, bioRxiv, PubMed, medRxiv, Google Scholar).
-3. `arxiv` -- when the topic is in physics/CS/quant-bio.
-4. `university-paper-access` -- institutional download path; first choice for full-text PDF.
-5. `paper-mcp` -- secondary metadata path.
-6. `scihub` -- last-resort PDF when institutional access fails. Note legal/network limitations.
+For SEARCH (broad coverage):
 
-Always prefer **abstract-level reasoning** before downloading PDFs. Only download a paper when an agent has decided it actually needs the full text.
+1. `semantic-scholar` -- best for metadata, paper resolution, citation graphs, abstract preview. Spans all journals + preprints.
+2. `paper-search` -- multi-source unified search (arXiv, bioRxiv, medRxiv, PubMed, Google Scholar). Casts the widest net for preprints AND PMC open-access journal papers.
+3. `paper-mcp` -- secondary metadata + DOI resolution path. Useful when a venue isn't well-indexed by Semantic Scholar.
+4. `arxiv` -- only when the topic is **explicitly preprint-relevant** (recent CS / physics / quant-bio that hasn't been formally published yet, OR seminal preprints from those fields). Don't make arxiv the primary source for an applied-physics or experimental-biology topic -- you'll miss the journal corpus.
+
+For FULL-TEXT DOWNLOAD (after a paper has been chosen):
+
+5. `university-paper-access` -- institutional download path via Unpaywall + on-campus IP. **First choice for full-text PDF** of any journal paper. Often returns a legal full-text where the user has institutional access.
+6. `arxiv` (download_paper) -- for arXiv ids only. Free, reliable, but only covers what's posted to arXiv.
+7. `paper-search` (download_*) -- per-source download from bioRxiv/medRxiv/PubMed/PMC.
+8. `scihub` -- last-resort PDF when institutional access fails. Note legal/network limitations.
+
+Always prefer **abstract-level reasoning** before downloading PDFs. Only download a paper when an agent has decided it actually needs the full text. Then capture it via the `paper-capture` skill (Iron Rule 6).
 
 ## Spawning sub-agents
 

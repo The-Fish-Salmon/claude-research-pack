@@ -8,6 +8,15 @@
 
 $ErrorActionPreference = 'Continue'
 
+# Windows-only guard. The script depends on %USERPROFILE% and the Obsidian
+# REST API on 127.0.0.1:27124 (which only the host running Obsidian
+# exposes). Running on Linux/macOS produces a noisy cascade of null-path
+# errors that aren't actionable.
+if (-not $IsWindows -and -not $env:USERPROFILE) {
+    Write-Host "[err] path-b-selftest.ps1 is Windows-only. On Linux/macOS, run the equivalent checks by hand or use Path A's WSL setup.sh." -ForegroundColor Red
+    exit 2
+}
+
 $pass = 0
 $fail = 0
 function Ok   { param($m) Write-Host "[ok]   $m" -ForegroundColor Green; $script:pass++ }

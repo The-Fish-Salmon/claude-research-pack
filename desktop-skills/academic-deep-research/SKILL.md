@@ -130,17 +130,30 @@ class of errors that Devil's Advocate misses.
 
 ## MCP server priority order
 
-The investigation phase MUST try these in order and stop at the first success:
+The investigation phase tries these in the order below. The order is biased
+toward broad-source coverage and institutional full-text access -- arXiv is
+**only authoritative for preprints** and is missing most journal-published
+work (Nature, Science, ACS Nano, Adv. Materials, Applied Physics Letters,
+most of EE/MatSci, biology, chemistry). Do NOT default to arXiv-only
+searches.
 
-1. `semantic-scholar` -- best for metadata, paper resolution, citation graphs, abstract preview. Tools: `mcp__semantic-scholar__search_semantic_scholar`, `mcp__semantic-scholar__get_semantic_scholar_paper_details`, `mcp__semantic-scholar__get_semantic_scholar_citations_and_references`.
-2. `paper-search` -- multi-source unified search. Tools: `mcp__paper-search__search_arxiv`, `search_biorxiv`, `search_medrxiv`, `search_pubmed`, `search_google_scholar`, plus `read_*_paper`.
-3. `arxiv` -- when the topic is in physics/CS/quant-bio. Tools: `mcp__arxiv__search_papers`, `get_abstract`, `read_paper`, `download_paper`.
-4. `university-paper-access` -- institutional download path; first choice for full-text PDF. Tools: `mcp__university-paper-access__search_papers`, `download_paper`.
-5. `paper-mcp` -- secondary metadata path. Tools: `mcp__paper-mcp__paper_get_metadata`, `paper_get_fulltext`.
-6. `scihub` -- last-resort PDF when institutional access fails. Tools: `mcp__scihub__search_scihub_by_doi`, `download_scihub_pdf`.
+For SEARCH (broad coverage):
 
-Always prefer **abstract-level reasoning** before downloading PDFs. Only download a
-paper when it will actually be cited.
+1. `semantic-scholar` -- best for metadata, paper resolution, citation graphs, abstract preview. Spans all journals + preprints. Tools: `search_semantic_scholar`, `get_semantic_scholar_paper_details`, `get_semantic_scholar_citations_and_references`.
+2. `paper-search` -- multi-source unified search. Casts the widest net for preprints AND PMC open-access journal papers. Tools: `search_arxiv`, `search_biorxiv`, `search_medrxiv`, `search_pubmed`, `search_google_scholar`, plus `read_*_paper`.
+3. `paper-mcp` -- secondary metadata + DOI resolution path. Tools: `paper_get_metadata`, `paper_get_fulltext`.
+4. `arxiv` -- only when the topic is **explicitly preprint-relevant** (recent CS / physics / quant-bio that hasn't been formally published yet, OR seminal preprints from those fields). Don't make arxiv the primary source for an applied-physics or experimental-biology topic -- you'll miss the journal corpus. Tools: `search_papers`, `get_abstract`, `read_paper`.
+
+For FULL-TEXT DOWNLOAD (after a paper has been chosen):
+
+5. `university-paper-access` -- institutional download path via Unpaywall + on-campus IP. **First choice for full-text PDF** of any journal paper. Tools: `search_papers`, `download_paper`.
+6. `arxiv` (download_paper) -- for arXiv ids only.
+7. `paper-search` (download_*) -- per-source download from bioRxiv/medRxiv/PubMed/PMC.
+8. `scihub` -- last-resort PDF when institutional access fails. Tools: `search_scihub_by_doi`, `download_scihub_pdf`.
+
+Always prefer **abstract-level reasoning** before downloading PDFs. Only
+download a paper when it will actually be cited. Then capture it via the
+`paper-capture` skill (Iron Rule 6).
 
 ## Mode-specific instructions
 

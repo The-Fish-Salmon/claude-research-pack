@@ -1,7 +1,9 @@
-# How to actually use the pack (Path C / Claude Desktop)
+# How to actually use the pack
 
 Six questions a typical user has after install. Concrete prompts you can
-paste straight into Claude Desktop.
+paste straight into Claude Desktop (Path C) or the Claude Code CLI (Path A
+on WSL, Path B on Windows native). Where the invocation differs across
+paths, both forms are shown.
 
 ---
 
@@ -18,34 +20,77 @@ Gemini's deep-research feature:
 | Hallucination guard | Light | Iron Rules + 3x Devil's Advocate self-critique + post-composition citation pre-flight |
 | Depth options | One mode | Seven (quick / full / lit-review / fact-check / socratic / systematic-review / review) |
 
-**To trigger it, do NOT say "deep research" by name.** That phrase routes
-to Claude Desktop's built-in deep-research feature instead of ours. Use
-free text:
+**Path C (Desktop) -- avoid the literal phrase "deep research"** (it routes to Claude Desktop's built-in feature instead of ours). Use free text:
 
 ```
 Do an academic literature review on {your topic}. Cite real papers from
-Semantic Scholar / arXiv. Land the draft in my vault Inbox.
+Semantic Scholar and journal sources. Land the draft in my vault Inbox.
 ```
+
+**Path A / B (Code) -- use the slash command:**
+
+```
+/research --mode lit-review "{your topic}"
+```
+
+Both paths run the same pipeline. On Path A/B, the Code variant uses
+parallel sub-agents (Agent tool) and is faster + harder for the model to
+shortcut. On Path C, it runs single-pass with explicit Devil's Advocate
+self-critique banners.
 
 ---
 
 ## 2. How do I give a topic and have it search + download papers automatically?
 
-That's the default behavior of `academic-deep-research`. The skill:
+That's the default behavior of `deep-research` (Path A/B) /
+`academic-deep-research` (Path C). The skill:
 
 1. Sharpens the question with a scoping pass.
 2. Pauses to show you the scope (`=== SCOPE CONFIRMATION ===`); you reply
    `go` (or correct the scope first).
-3. Searches the paper MCP servers in priority order.
-4. For every paper it actually reads at full text, invokes `paper-capture`,
-   which downloads the PDF and writes a `{vault}/30_Literature/{citekey}.md`
-   note. PDFs land at `{vault}/80_Attachments/papers/{citekey}.pdf`.
+3. Searches the paper MCP servers in priority order. **Search priority is
+   broad-first** -- Semantic Scholar (all journals + preprints), then
+   paper-search (multi-source), then paper-mcp metadata, then arXiv as a
+   last resort for preprint-specific topics. The order is deliberately
+   biased AWAY from arXiv-only, since most journal-published work isn't
+   on arXiv.
+4. For every paper the skill **actually reads at full text** (not just
+   abstract), it invokes `paper-capture`, which downloads the PDF and
+   writes a `{vault}/30_Literature/{citekey}.md` note. PDFs land at
+   `{vault}/80_Attachments/papers/{citekey}.pdf`. Download priority for a
+   given paper: university-paper-access (institutional) -> arXiv (if it
+   has an arXiv id) -> paper-search per-source downloaders -> Sci-Hub
+   (last resort).
 5. Drafts the deliverable.
 6. Re-verifies every citation against Semantic Scholar (citation pre-flight).
 7. Drops the draft in `{vault}/00_Inbox/research-{slug}-{date}.md`.
 
-Example:
+### Trigger condition for auto-download (important)
 
+Auto-download fires for papers that are **fetched at full text**. Papers
+the skill only previewed at the abstract level are NOT downloaded -- they
+appear in the draft as citations but no `30_Literature/` note is written.
+This is intentional: a 50-paper lit review shouldn't blast 50 PDFs into
+your library if 35 were rejected on abstract.
+
+If you want **every paper cited** in the final draft to be captured (not
+just the ones read at full text), say so explicitly:
+
+```
+... and capture every paper cited in the final draft, even if you only
+read the abstract.
+```
+
+The skill will then capture-by-DOI for the abstract-only ones too.
+
+### Example
+
+Path A / B:
+```
+/research --mode lit-review "ion-gated transistors for reservoir computing"
+```
+
+Path C:
 ```
 Do an academic literature review on ion-gated transistors for reservoir
 computing. Capture every paper you actually read.
@@ -53,7 +98,7 @@ computing. Capture every paper you actually read.
 
 When done, check:
 
-- `{vault}/30_Literature/` -- one new `.md` per paper consumed.
+- `{vault}/30_Literature/` -- one new `.md` per paper consumed at full text.
 - `{vault}/80_Attachments/papers/` -- one PDF per captured paper.
 - `{vault}/00_Inbox/` -- the synthesis draft.
 
@@ -136,8 +181,14 @@ Two patterns.
 
 ### Single PDF on disk
 
-Drop the PDF anywhere accessible. Then:
+Drop the PDF anywhere accessible.
 
+Path A / B:
+```
+/ingest-pdf D:\downloads\smith2024.pdf
+```
+
+Path C (free text):
 ```
 Ingest this PDF: D:\downloads\smith2024.pdf
 ```
@@ -158,6 +209,12 @@ The `ingest-pdf` skill:
 Drop them all into `{vault}/80_Attachments/papers-inbox/` (any folder you
 pick is fine; this convention is just easy to remember). Then:
 
+Path A / B:
+```
+/ingest-pdf C:\Users\me\Documents\MyVault\80_Attachments\papers-inbox
+```
+
+Path C:
 ```
 Process the PDFs in papers-inbox.
 ```
@@ -287,21 +344,22 @@ asks the first question.
 
 ## Cheat sheet
 
-| You want... | Paste this |
-|---|---|
-| A literature review with auto-download | `Do an academic literature review on {topic}. Capture every paper you read.` |
-| A systematic review (PRISMA) | `Do a systematic review on {topic}. Use PRISMA. Time budget 30 min.` |
-| A quick fact check | `Fact-check the claim that {claim}, using my captured papers.` |
-| Add a PDF on disk | `Ingest this PDF: {path}` |
-| Bulk ingest | `Process the PDFs in {folder}.` |
-| Library overview | `What's in my literature library?` |
-| What to read next | `What should I read next?` |
-| Where am I | `Where is my research?` |
-| Cross-paper synthesis | `Synthesize {citekey1}, {citekey2}, {citekey3} on {topic}.` |
-| Quote-backed answer | (see question 6) |
-| Save state for another device | `Save research state.` |
-| Resume on this device | `Resume research state.` |
-| Verify continuity setup | `Run sync-check.` |
+| You want... | Path A/B (slash command) | Path C (free text) |
+|---|---|---|
+| A literature review with auto-download | `/research --mode lit-review "{topic}"` | `Do an academic literature review on {topic}.` |
+| A systematic review (PRISMA) | `/research --mode systematic-review "{topic}"` | `Do a systematic review on {topic}. Use PRISMA.` |
+| A quick fact check | `/research --mode fact-check "{claim}"` | `Fact-check the claim that {claim}, using my captured papers.` |
+| Add a paper from a DOI | `/capture-paper {doi}` | `Save this paper: {doi}` |
+| Add a PDF on disk | `/ingest-pdf {path}` | `Ingest this PDF: {path}` |
+| Bulk ingest | `/ingest-pdf {folder}` | `Process the PDFs in {folder}.` |
+| Library overview | `/lit-map summary` | `What's in my literature library?` |
+| What to read next | `/lit-map next-action` or `/copilot what should I read next` | `What should I read next?` |
+| Where am I | `/copilot` or `/status` | `Where is my research?` |
+| Cross-paper synthesis | `/copilot synthesize {citekey1} {citekey2}` | `Synthesize {citekey1}, {citekey2}, {citekey3} on {topic}.` |
+| Quote-backed answer | (see question 6) | (see question 6) |
+| Save state | `/handoff` | `Save research state.` (Path C also has cross-device `capture-research-state`) |
+| Resume / orient | `/status` | `Resume research state.` |
+| Verify setup | `.\scripts\path-b-selftest.ps1` (Path B) | `Run sync-check.` (Path C) |
 
 ---
 
