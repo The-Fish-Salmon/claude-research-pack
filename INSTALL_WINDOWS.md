@@ -17,13 +17,13 @@ you'll use.
 | **Iron Rules + citation discipline** | ✅ | ✅ | ✅ |
 | **Paper capture into vault** | ✅ | ✅ | ✅ |
 | **Cross-device research continuity** (snapshot/resume via synced vault) | ❌ | ❌ | ✅ -- v3 |
-| **Local-PDF ingestion** (drop a PDF, get a 30_Literature note) | ❌ | ✅ -- v5 | ✅ -- v4 |
-| **Interactive research co-pilot loop** (orient/question/suggest/synthesize/escalate) | ❌ | ✅ -- v5 | ✅ -- v4 |
-| **Mandatory scoping confirmation + citation pre-flight in deep-research** | ❌ | ✅ -- v5 | ✅ -- v4 |
-| **Auto-install prereqs via winget + auto-detect vault & API key** | ❌ | ✅ -- v5 | ❌ |
-| **Post-install self-test** | ❌ | ✅ -- v5 | ❌ |
+| **Local-PDF ingestion** (drop a PDF, get a 30_Literature note) | ✅ -- v6 | ✅ -- v5 | ✅ -- v4 |
+| **Interactive research co-pilot loop** (orient/question/suggest/synthesize/escalate) | ✅ -- v6 | ✅ -- v5 | ✅ -- v4 |
+| **Mandatory scoping confirmation + citation pre-flight in deep-research** | ✅ -- v6 | ✅ -- v5 | ✅ -- v4 |
+| **Wizard with auto-detect vault & API key & email** | ✅ -- v6 | ✅ -- v5 | ❌ |
+| **Post-install self-test** | ✅ -- v6 | ✅ -- v5 | ❌ |
 | **Most-tested** | ✅ | new in v2 / v5 | new in v2 / v3 / v4 |
-| **Setup time** | 30-45 min | **~5 min** (after Claude Code) | 20-30 min |
+| **Setup time** | **~5 min** (after Claude Code + apt prereqs) | **~5 min** (after Claude Code) | 20-30 min |
 
 **Decision tree:**
 
@@ -168,58 +168,91 @@ cd /mnt/c/Users/<you>/claude-research-pack
 bash scripts/setup.sh
 ```
 
-What the WSL setup script does:
+What `setup.sh` does (v6 -- parity with Path B's v5 wizard):
 
-1. Copies `skills/`, `hooks/`, `commands/` into `~/.claude/`.
-2. Calls `mcp-servers/install-mcp-servers.sh`, which installs `uv`, the PyPI MCP
-   servers, clones Sci-Hub-MCP-Server, copies bundled custom servers, runs
-   `npm install` for the Obsidian wrapper, merges MCP entries into
-   `~/.claude.json` (jq deep-merge).
-3. Merges `settings/settings.template.json` into `~/.claude/settings.json`.
+1. **Pre-flight.** Verifies Claude Code CLI is on PATH; verifies (or auto-
+   installs) `uv`. For missing apt-installable prereqs (jq, rsync, curl,
+   git, node, npm, python3, python3-venv) it bails with the exact
+   `sudo apt install` line.
+2. **Configuration wizard.** One prompt block. Defaults are auto-detected:
+   - **Vault path** -- pulled from Obsidian's recent-vaults file at
+     `/mnt/c/Users/<you>/AppData/Roaming/obsidian/obsidian.json` (Windows
+     side, accessed via the WSL mount). Windows paths are converted to
+     `/mnt/c/...` form automatically.
+   - **API key** -- pulled from
+     `<vault>/.obsidian/plugins/obsidian-local-rest-api/data.json`.
+   - **Email** -- pulled from `git config --global user.email`.
+   - **Paper dir** -- defaults to `/mnt/d/papers` if `/mnt/d` exists,
+     else `~/papers`.
+   On re-runs, defaults pre-fill from the existing `~/.bashrc` env block
+   so your prior choices stick.
+3. **Persistent env vars.** Writes a marked block to `~/.bashrc` (idempotent
+   replace if the block exists already). Also exports to the current shell
+   so the rest of the install can use them.
+4. **Vault bootstrap.** `rsync --ignore-existing vault-templates/ ->
+   $OBSIDIAN_VAULT_PATH`. Then writes `<vault>/.obsidian/app.json`
+   (attachments folder = `80_Attachments`) and `templates.json`
+   (folder = `70_Templates`) -- no manual Obsidian Settings clicks.
+5. **Skills + hooks + commands.** Copies six skills (deep-research,
+   paper-capture, lit-status, handoff, ingest-pdf, research-copilot),
+   five hooks, seven slash commands into `~/.claude/`.
+6. **MCP servers** via `install-mcp-servers.sh`.
+7. **Settings merge.** Backs up the existing `~/.claude/settings.json`
+   first, then deep-merges with `settings.template.json` (jq).
+8. **Self-test.** Runs `scripts/path-a-selftest.sh` -- six checks, exits
+   0 if all green.
 
-Idempotent -- re-run if a step fails.
+Idempotent. Re-run any time -- safe.
 
-### Path A env vars
-
-Add to `~/.bashrc` (or `~/.zshrc`) inside WSL:
+### Path A re-running the self-test
 
 ```bash
-export PAPER_DOWNLOAD_DIR=/mnt/d/papers
-export ARXIV_STORAGE_PATH="$PAPER_DOWNLOAD_DIR/arxiv"
-export UNPAYWALL_EMAIL=you@example.org
-export OBSIDIAN_VAULT_PATH="/mnt/c/Users/$USER/Documents/MyVault"
-export OBSIDIAN_API_KEY="paste-from-obsidian-plugin"
-# Optional: export PAPER_MENTION_HOOK=on
+bash scripts/path-a-selftest.sh
 ```
 
-Then `source ~/.bashrc` (or open a new terminal).
+Six checks (claude --version, claude mcp list, ~/.claude.json, ~/.claude/
+settings.json, env vars survive a fresh login shell, Obsidian Local REST
+API reachable). Exit 0 if all green.
 
-### Path A vault bootstrap
+### Path A smoke tests (after install)
 
 ```bash
-rsync -a --ignore-existing ~/claude-research-pack/vault-templates/ "$OBSIDIAN_VAULT_PATH/"
+source ~/.bashrc   # pick up the new env block in this shell
+claude
 ```
 
-Open Obsidian -> Settings -> Files & Links -> "Default location for new attachments" -> `80_Attachments`.
-Settings -> Templates (core plugin) -> "Template folder location" -> `70_Templates`.
-
-### Path A smoke tests
-
-In a Claude Code session:
-
-```text
-> claude mcp list
-```
-Expect all 7 servers listed. If any are red, run `claude --debug` and look at stderr.
+Then in the Claude Code session:
 
 ```text
 /status
 /research --mode quick "ion-gated transistors for reservoir computing"
-/capture-paper 10.1038/s41586-021-03819-2
+/ingest-pdf /mnt/d/papers/some-paper.pdf
+/copilot
 /lit-map summary
+/capture-paper 10.1038/s41586-021-03819-2
 ```
 
-If all five pass, Path A is up.
+`/research` will pause at `=== SCOPE CONFIRMATION ===` -- reply `go` (or
+correct the scope). Final draft ends with a citation pre-flight summary
+line.
+
+### Path A manual fallback
+
+If you want to set env vars by hand instead of via the wizard, drop the
+block in `~/.bashrc`:
+
+```bash
+# >>> claude-research-pack env >>>
+export OBSIDIAN_VAULT_PATH="/mnt/c/Users/$USER/Documents/MyVault"
+export OBSIDIAN_API_KEY="paste-from-obsidian-plugin"
+export PAPER_DOWNLOAD_DIR=/mnt/d/papers
+export ARXIV_STORAGE_PATH="$PAPER_DOWNLOAD_DIR/arxiv"
+export UNPAYWALL_EMAIL=you@example.org
+# <<< claude-research-pack env <<<
+```
+
+Then `source ~/.bashrc` and re-run `setup.sh` (the wizard will auto-detect
+your block and pre-fill its prompts).
 
 ---
 
