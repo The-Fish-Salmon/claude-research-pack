@@ -41,7 +41,9 @@ if (-not $claude) {
 # 2. claude mcp list shows expected servers
 $expectedServers = @('arxiv', 'semantic-scholar', 'paper-search', 'paper-mcp', 'scihub', 'university-paper-access', 'obsidian')
 if ($claude) {
-    $mcpOut = & claude mcp list 2>&1
+    # Join into a single string: PowerShell's -notmatch on a string array returns
+    # the non-matching elements (truthy for every iteration), not a boolean.
+    $mcpOut = (& claude mcp list 2>&1 | Out-String)
     $missing = @()
     foreach ($s in $expectedServers) {
         if ($mcpOut -notmatch "\b$([regex]::Escape($s))\b") { $missing += $s }

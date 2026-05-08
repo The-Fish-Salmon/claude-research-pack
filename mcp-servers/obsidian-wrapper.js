@@ -33,7 +33,19 @@ function resolveMcpObsidian() {
 }
 
 const target = resolveMcpObsidian();
-const args = process.argv.slice(2);
+// mcp-obsidian requires <vault-directory> as argv[1]. Prefer an explicit CLI
+// arg (so callers can override), fall back to OBSIDIAN_VAULT_PATH from the
+// inherited environment, which is how the install pack exposes the vault.
+let args = process.argv.slice(2);
+if (args.length === 0 && process.env.OBSIDIAN_VAULT_PATH) {
+  args = [process.env.OBSIDIAN_VAULT_PATH];
+}
+if (args.length === 0) {
+  process.stderr.write(
+    '[obsidian-wrapper] no vault directory provided. Pass one as an arg or set OBSIDIAN_VAULT_PATH.\n'
+  );
+  process.exit(1);
+}
 const child = spawn(
   process.execPath,
   [target, ...args],

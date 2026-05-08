@@ -304,6 +304,29 @@ switch ($Mode) {
         if ($tplObj.PSObject.Properties.Match('_comment_optional_hooks').Count) { $tplObj.PSObject.Properties.Remove('_comment_optional_hooks') }
         if ($tplObj.PSObject.Properties.Match('_optional_hooks').Count)        { $tplObj.PSObject.Properties.Remove('_optional_hooks') }
 
+        # Expand %USERPROFILE% (and any other %VAR%) in hook/statusline command strings,
+        # then flip backslashes to forward slashes.
+        # WHY: Claude Code on Windows runs hooks via Git Bash. Bash does not expand cmd-style
+        # %VAR% placeholders, and treats unknown backslash escapes (\U \k \. \h \s) as no-ops,
+        # so a raw "%USERPROFILE%\.claude\hooks\foo.py" -- or even an expanded
+        # "C:\Users\kxsps\.claude\hooks\foo.py" -- arrives at Python with the backslashes
+        # eaten. Forward slashes survive bash quoting and work fine for Python's open() and
+        # PowerShell's -File argument on Windows.
+        function Expand-EnvInTree {
+            param([Parameter(Mandatory = $true)]$node)
+            if ($null -eq $node)              { return $null }
+            if ($node -is [string])           { return ([Environment]::ExpandEnvironmentVariables($node)) -replace '\\', '/' }
+            if ($node -is [System.Collections.IList]) {
+                $out = @(); foreach ($item in $node) { $out += , (Expand-EnvInTree $item) }; return ,$out
+            }
+            if ($node -is [pscustomobject]) {
+                foreach ($p in @($node.PSObject.Properties)) { $node.$($p.Name) = Expand-EnvInTree $p.Value }
+                return $node
+            }
+            return $node
+        }
+        $tplObj = Expand-EnvInTree $tplObj
+
         if (-not (Test-Path $targetPath)) {
             $tplObj | ConvertTo-Json -Depth 50 | Set-Content -Path $targetPath -Encoding UTF8
         } else {

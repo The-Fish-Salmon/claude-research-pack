@@ -18,13 +18,23 @@
     },
     "arxiv": {
       "type": "stdio",
-      "command": "arxiv-mcp-server",
-      "args": []
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "arxiv-mcp-server",
+        "arxiv-mcp-server"
+      ]
     },
     "semantic-scholar": {
       "type": "stdio",
-      "command": "semanticscholar-mcp-server",
-      "args": []
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "semanticscholar-mcp-server",
+        "semanticscholar-mcp-server"
+      ]
     },
     "paper-search": {
       "type": "stdio",
@@ -40,8 +50,13 @@
     },
     "paper-mcp": {
       "type": "stdio",
-      "command": "paper-mcp",
-      "args": []
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "paper-mcp",
+        "paper-mcp"
+      ]
     },
     "scihub": {
       "type": "stdio",

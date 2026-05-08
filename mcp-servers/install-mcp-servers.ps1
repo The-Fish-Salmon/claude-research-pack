@@ -82,9 +82,26 @@ if (-not (Get-Command 'uv' -ErrorAction SilentlyContinue)) {
 }
 Require-Cmd 'uv' 'uv install failed -- check the output above and rerun.'
 
-# 2. uv-installed MCP servers (idempotent)
+# Persist uv's bin dir in the user PATH so GUI apps (Claude Desktop) can find `uv` at launch.
+# Claude Desktop is started from the Start menu and inherits only the *persistent* user environment --
+# PATH changes made in the current PowerShell session are NOT visible to it.
+$uvBin = Join-Path $env:USERPROFILE '.local\bin'
+if (Test-Path $uvBin) {
+    $userPath = [Environment]::GetEnvironmentVariable('PATH', 'User')
+    if (-not ($userPath -split ';' | Where-Object { $_ -ieq $uvBin })) {
+        [Environment]::SetEnvironmentVariable('PATH', "$uvBin;$userPath", 'User')
+        Log "Added $uvBin to persistent user PATH. Sign out and back in before launching Claude Desktop."
+    } else {
+        Log "$uvBin already in persistent user PATH."
+    }
+}
+
+# 2. uv-installed MCP servers (pre-cached for faster first-run via `uv run --with`)
+# NOTE: The MCP config no longer invokes these by bare command name -- it uses
+# `uv run --with <pkg> <cmd>` so PATH is not required at runtime. The installs
+# below are kept to pre-populate uv's cache and speed up first launch.
 foreach ($pkg in @('arxiv-mcp-server', 'semanticscholar-mcp-server', 'paper-mcp')) {
-    Log "Installing $pkg"
+    Log "Pre-caching $pkg"
     & uv tool install $pkg
     if ($LASTEXITCODE -ne 0) { Warn "$pkg install returned non-zero (may already be installed at the same version)" }
 }
