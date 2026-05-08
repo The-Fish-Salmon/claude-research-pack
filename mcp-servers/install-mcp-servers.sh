@@ -84,22 +84,40 @@ else
   warn "university-paper-access source missing in pack -- skipping"
 fi
 
-# 5. obsidian-wrapper.js
-OBS_SRC="${PACK_DIR}/mcp-servers/obsidian-wrapper.js"
-OBS_DST="${TARGET_DIR}/obsidian-wrapper.js"
-if [[ -f "${OBS_SRC}" ]]; then
-  log "Installing obsidian-wrapper.js"
-  cp "${OBS_SRC}" "${OBS_DST}"
-  # The wrapper depends on a couple of npm packages; install them next to the wrapper.
-  pushd "${TARGET_DIR}" >/dev/null
-  if [[ ! -f package.json ]]; then
-    npm init -y >/dev/null
+# 5. Obsidian access: REST-API wrapper OR filesystem MCP, depending on mode.
+#
+# PACK_FILESYSTEM_MODE=1 (set by setup.sh --filesystem-mode) replaces the
+# Local-REST-API-based obsidian MCP with the official filesystem MCP server,
+# scoped to the vault. The REST-API path requires Obsidian's Local REST API
+# plugin to be reachable from this machine; on WSL2 with Windows-side
+# Obsidian that's frequently blocked by Windows Defender Firewall / Hyper-V
+# firewall / TLS-stack issues. Filesystem mode sidesteps the network entirely.
+if [[ "${PACK_FILESYSTEM_MODE:-0}" == "1" ]]; then
+  log "Installing filesystem MCP server (mcp-server-filesystem)"
+  # Install globally so `mcp-server-filesystem` is on PATH for Claude Code.
+  npm install -g --silent @modelcontextprotocol/server-filesystem || \
+    warn "npm install of mcp-server-filesystem returned non-zero"
+  # Remove any leftover REST-API wrapper from a prior install.
+  if [[ -f "${TARGET_DIR}/obsidian-wrapper.js" ]]; then
+    log "Removing stale obsidian-wrapper.js (filesystem mode)"
+    rm -f "${TARGET_DIR}/obsidian-wrapper.js"
   fi
-  # mcp-obsidian is the actual MCP server we wrap -- required, not optional.
-  npm install --silent @modelcontextprotocol/sdk node-fetch mcp-obsidian || warn "npm install of obsidian wrapper deps returned non-zero"
-  popd >/dev/null
 else
-  warn "obsidian-wrapper.js missing in pack -- skipping"
+  OBS_SRC="${PACK_DIR}/mcp-servers/obsidian-wrapper.js"
+  OBS_DST="${TARGET_DIR}/obsidian-wrapper.js"
+  if [[ -f "${OBS_SRC}" ]]; then
+    log "Installing obsidian-wrapper.js (REST API mode)"
+    cp "${OBS_SRC}" "${OBS_DST}"
+    pushd "${TARGET_DIR}" >/dev/null
+    if [[ ! -f package.json ]]; then
+      npm init -y >/dev/null
+    fi
+    # mcp-obsidian is the actual MCP server we wrap -- required, not optional.
+    npm install --silent @modelcontextprotocol/sdk node-fetch mcp-obsidian || warn "npm install of obsidian wrapper deps returned non-zero"
+    popd >/dev/null
+  else
+    warn "obsidian-wrapper.js missing in pack -- skipping"
+  fi
 fi
 
 # 6. Merge MCP config into ~/.claude.json
@@ -123,6 +141,30 @@ else
   mv "${TMP}.merged" "${SETTINGS_TARGET}"
 fi
 rm -f "${TMP}" "${TMP}.expanded" 2>/dev/null
+
+# Filesystem-mode patch: swap the obsidian MCP entry for vault-fs.
+if [[ "${PACK_FILESYSTEM_MODE:-0}" == "1" ]]; then
+  vault="${OBSIDIAN_VAULT_PATH:-}"
+  if [[ -z "$vault" ]]; then
+    warn "PACK_FILESYSTEM_MODE=1 but OBSIDIAN_VAULT_PATH is unset; cannot configure vault-fs MCP."
+  else
+    log "Filesystem mode: swapping obsidian MCP for vault-fs (${vault})"
+    backup="${SETTINGS_TARGET}.bak.$(date +%Y%m%d%H%M%S)"
+    cp "${SETTINGS_TARGET}" "${backup}"
+    jq --arg vault "$vault" '
+      .mcpServers
+      |= ( del(.obsidian)
+           + { "vault-fs": {
+                 "type": "stdio",
+                 "command": "mcp-server-filesystem",
+                 "args": [ $vault ]
+               }
+             }
+         )
+    ' "${SETTINGS_TARGET}" > "${SETTINGS_TARGET}.new"
+    mv "${SETTINGS_TARGET}.new" "${SETTINGS_TARGET}"
+  fi
+fi
 
 log "Done. Required env vars:"
 cat <<'EOF'

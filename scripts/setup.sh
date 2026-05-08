@@ -2,8 +2,18 @@
 #
 # setup.sh -- bootstrap the claude-research-pack into ~/.claude/ on WSL/Linux.
 #
-# Run from inside WSL (Ubuntu) after cloning/extracting the pack:
-#   $ bash scripts/setup.sh
+# Usage:
+#   $ bash scripts/setup.sh                    # default: REST-API obsidian MCP
+#   $ bash scripts/setup.sh --filesystem-mode  # filesystem MCP only, no REST API
+#
+# --filesystem-mode is the right choice on WSL2 when the Windows-side
+# Obsidian Local REST API isn't reachable (Windows Defender Firewall,
+# Hyper-V firewall, or other cross-OS-localhost issues that won't yield
+# to bind-address 0.0.0.0 / Hyper-V firewall rules / mirrored networking).
+# It swaps the bundled obsidian-wrapper.js for the official filesystem
+# MCP server (`@modelcontextprotocol/server-filesystem`) scoped to the
+# vault. Vault reads/writes work via plain filesystem operations; lose
+# Obsidian-side frontmatter search but keep all skill functionality.
 #
 # v6 (parity with Path B v5):
 #   1. Pre-flight: verify or auto-install Claude Code, jq, rsync, curl, git,
@@ -13,21 +23,29 @@
 #        - %APPDATA%/obsidian/obsidian.json    (recent vaults, Windows side)
 #        - $vault/.obsidian/plugins/obsidian-local-rest-api/data.json (API key)
 #        - git config --global user.email      (Unpaywall email)
-#      One prompt block. Hit Enter to accept defaults.
-#   3. Persistent env vars: append a marked block to ~/.bashrc (idempotent
-#      replace if the block exists) AND export to the current shell.
-#   4. Vault bootstrap: rsync --ignore-existing vault-templates/ -> vault.
-#   5. Obsidian app config: write <vault>/.obsidian/app.json (attachments
-#      folder = 80_Attachments) and templates.json (folder = 70_Templates).
-#   6. Skills + hooks + commands -> ~/.claude/. Includes v5 additions
-#      (ingest-pdf, research-copilot, /ingest-pdf, /copilot).
-#   7. MCP servers via install-mcp-servers.sh.
-#   8. Settings merge.
-#   9. Self-test (path-a-selftest.sh) -- 6 checks, exits 0 if all green.
+#   3. Persistent env vars: append a marked block to ~/.bashrc; also export
+#      to current shell.
+#   4. Vault bootstrap + Obsidian app.json + templates.json.
+#   5. Skills, hooks, commands -> ~/.claude/.
+#   6. MCP servers via install-mcp-servers.sh (filesystem-mode-aware).
+#   7. Settings merge + self-test.
 #
 # Idempotent. Re-run any time -- safe.
 
 set -euo pipefail
+
+# ---------- Flags ----------
+FILESYSTEM_MODE=0
+for arg in "$@"; do
+    case "$arg" in
+        --filesystem-mode) FILESYSTEM_MODE=1 ;;
+        --help|-h)
+            sed -n '/^# Usage:/,/^# Idempotent/p' "$0" | sed 's/^# \?//'
+            exit 0
+            ;;
+    esac
+done
+export PACK_FILESYSTEM_MODE="$FILESYSTEM_MODE"
 
 PACK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLAUDE_DIR="${HOME}/.claude"
@@ -40,9 +58,26 @@ info() { printf '\033[1;36m[info]\033[0m %s\n' "$*"; }
 # ---------- 1. Pre-flight ----------
 need_apt=()
 
-# Claude Code: must be on PATH; cannot apt-install
+# Claude Code: look on PATH first; fall back to the VS Code extension's
+# bundled binary. On WSL, the extension lives under
+# ~/.vscode-server/extensions/anthropic.claude-code-*-linux-x64/resources/
+# native-binary/claude. If found, symlink it into ~/.local/bin so subsequent
+# commands (and future shells) can find `claude`.
 if ! command -v claude >/dev/null 2>&1; then
-    err "claude (Claude Code CLI) not on PATH. Install from https://claude.ai/code, then re-run."
+    vscode_ext_root="${HOME}/.vscode-server/extensions"
+    if [[ -d "$vscode_ext_root" ]]; then
+        vscode_claude="$(find "$vscode_ext_root" -maxdepth 4 -type f -name claude -path '*anthropic.claude-code-*' 2>/dev/null | sort | tail -1)"
+        if [[ -n "$vscode_claude" && -x "$vscode_claude" ]]; then
+            mkdir -p "${HOME}/.local/bin"
+            ln -sf "$vscode_claude" "${HOME}/.local/bin/claude"
+            export PATH="${HOME}/.local/bin:${PATH}"
+            log "Claude Code: $vscode_claude (symlinked to ~/.local/bin/claude)"
+        fi
+    fi
+fi
+if ! command -v claude >/dev/null 2>&1; then
+    err "claude (Claude Code CLI) not on PATH and not found in VS Code extensions."
+    err "Install from https://claude.ai/code (or the VS Code Anthropic extension), then re-run."
     exit 1
 fi
 log "Claude Code: $(command -v claude)"
@@ -306,7 +341,11 @@ for c in research.md capture-paper.md lit-map.md status.md port-to-vault.md inge
 done
 
 # ---------- 7. MCP servers ----------
-log "Installing MCP servers"
+if [[ "$FILESYSTEM_MODE" == "1" ]]; then
+    log "Installing MCP servers (filesystem mode -- no REST API obsidian wrapper)"
+else
+    log "Installing MCP servers"
+fi
 bash "${PACK_DIR}/mcp-servers/install-mcp-servers.sh"
 
 # ---------- 8. Settings merge ----------

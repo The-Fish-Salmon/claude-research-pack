@@ -40,7 +40,13 @@ else
 fi
 
 # 2. claude mcp list shows the expected 7 servers
-expected=(arxiv semantic-scholar paper-search paper-mcp scihub university-paper-access obsidian)
+# In filesystem mode, the obsidian REST-API server is replaced by vault-fs.
+expected=(arxiv semantic-scholar paper-search paper-mcp scihub university-paper-access)
+if jq -e '.mcpServers["vault-fs"]' "${HOME}/.claude.json" >/dev/null 2>&1; then
+    expected+=(vault-fs)
+else
+    expected+=(obsidian)
+fi
 if command -v claude >/dev/null 2>&1; then
     mcp_out="$(claude mcp list 2>&1 || true)"
     missing=()
@@ -104,46 +110,68 @@ else
     fl "env vars NOT visible to a fresh login shell: ${missing_vars[*]} -- check ~/.bashrc env block"
 fi
 
-# 6. Obsidian Local REST API reachable (TLS, port 27124)
-# On WSL2, the Windows-side Obsidian listens on the Windows host's
-# 127.0.0.1; from inside WSL that may or may not be reachable depending on
-# WSL networking mode. We try both 127.0.0.1 and the Windows host IP
-# (default gateway).
-if [[ -n "${OBSIDIAN_API_KEY:-}" ]]; then
-    win_host=""
-    if grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
-        win_host="$(ip route show 2>/dev/null | awk '/^default/ {print $3; exit}')"
-    fi
-    http_status=""
-    for host in 127.0.0.1 ${win_host:-}; do
-        [[ -z "$host" ]] && continue
-        code="$(curl -sk -o /dev/null -w '%{http_code}' \
-            -H "Authorization: Bearer ${OBSIDIAN_API_KEY}" \
-            --max-time 5 \
-            "https://${host}:27124/" 2>/dev/null)"
-        curl_exit=$?
-        if [[ $curl_exit -eq 0 && -n "$code" && "$code" != "000" ]]; then
-            http_status="$code"
-            break
-        fi
-    done
-    [[ -z "$http_status" ]] && http_status="000"
-
-    if [[ "$http_status" == "200" ]]; then
-        ok "Obsidian Local REST API reachable on port 27124"
-    elif [[ "$http_status" == "401" ]]; then
-        fl "Obsidian REST API returned 401 -- API key mismatch. Re-copy from Obsidian plugin settings."
-    elif [[ "$http_status" == "000" ]]; then
-        if grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
-            fl "Obsidian REST API not reachable from WSL on 127.0.0.1 or ${win_host:-Windows host}. (1) Is Obsidian running on Windows with the Local REST API plugin enabled? (2) Some WSL2 setups block cross-OS localhost; try plugin's 'Bind Address' = 0.0.0.0 instead of 127.0.0.1."
+# 6. Vault accessibility. Two modes:
+#    - Filesystem mode (vault-fs MCP): verify vault path exists + readable.
+#    - REST API mode (obsidian MCP): try to reach the Local REST API.
+# We detect mode by inspecting ~/.claude.json's mcpServers.
+if jq -e '.mcpServers["vault-fs"]' "$claude_json" >/dev/null 2>&1; then
+    # Filesystem mode -- check the vault directory is reachable.
+    vault="${OBSIDIAN_VAULT_PATH:-}"
+    if [[ -z "$vault" ]]; then
+        fl "filesystem mode (vault-fs MCP), but OBSIDIAN_VAULT_PATH is unset"
+    elif [[ ! -d "$vault" ]]; then
+        fl "filesystem mode: vault path '$vault' is not a directory"
+    elif [[ ! -r "$vault" ]]; then
+        fl "filesystem mode: vault path '$vault' is not readable"
+    else
+        # Spot-check: the vault should have at least one of the PARA folders.
+        if [[ -d "$vault/30_Literature" || -d "$vault/00_Inbox" || -d "$vault/.obsidian" ]]; then
+            ok "filesystem mode (vault-fs MCP): vault at '$vault' is reachable + readable"
         else
-            fl "Obsidian REST API not reachable. Is Obsidian running with the Local REST API plugin enabled?"
+            wn "filesystem mode: vault at '$vault' has no recognizable PARA / Obsidian markers; consider re-running setup.sh to bootstrap vault-templates"
+            ok "filesystem mode (vault-fs MCP): vault at '$vault' is reachable + readable"
+        fi
+    fi
+elif jq -e '.mcpServers.obsidian' "$claude_json" >/dev/null 2>&1; then
+    # REST API mode.
+    if [[ -n "${OBSIDIAN_API_KEY:-}" ]]; then
+        win_host=""
+        if grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
+            win_host="$(ip route show 2>/dev/null | awk '/^default/ {print $3; exit}')"
+        fi
+        http_status=""
+        for host in 127.0.0.1 ${win_host:-}; do
+            [[ -z "$host" ]] && continue
+            code="$(curl -sk -o /dev/null -w '%{http_code}' \
+                -H "Authorization: Bearer ${OBSIDIAN_API_KEY}" \
+                --max-time 5 \
+                "https://${host}:27124/" 2>/dev/null)"
+            curl_exit=$?
+            if [[ $curl_exit -eq 0 && -n "$code" && "$code" != "000" ]]; then
+                http_status="$code"
+                break
+            fi
+        done
+        [[ -z "$http_status" ]] && http_status="000"
+
+        if [[ "$http_status" == "200" ]]; then
+            ok "Obsidian Local REST API reachable on port 27124"
+        elif [[ "$http_status" == "401" ]]; then
+            fl "Obsidian REST API returned 401 -- API key mismatch. Re-copy from Obsidian plugin settings."
+        elif [[ "$http_status" == "000" ]]; then
+            if grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
+                fl "Obsidian REST API not reachable from WSL on 127.0.0.1 or ${win_host:-Windows host}. WSL2 cross-OS localhost / TLS handshake issues are common. Consider re-running 'bash scripts/setup.sh --filesystem-mode' to swap to filesystem-based vault access."
+            else
+                fl "Obsidian REST API not reachable. Is Obsidian running with the Local REST API plugin enabled?"
+            fi
+        else
+            fl "Obsidian REST API returned HTTP $http_status (unexpected)"
         fi
     else
-        fl "Obsidian REST API returned HTTP $http_status (unexpected)"
+        wn "OBSIDIAN_API_KEY not set in current shell -- skipping REST API check."
     fi
 else
-    wn "OBSIDIAN_API_KEY not set in current shell -- skipping REST API check."
+    wn "Neither 'obsidian' nor 'vault-fs' MCP found in ~/.claude.json -- vault access not configured."
 fi
 
 echo ""

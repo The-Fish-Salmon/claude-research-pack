@@ -165,8 +165,24 @@ Or directly from inside WSL:
 
 ```bash
 cd /mnt/c/Users/<you>/claude-research-pack
-bash scripts/setup.sh
+bash scripts/setup.sh                    # default: REST-API obsidian MCP
+bash scripts/setup.sh --filesystem-mode  # filesystem MCP only (recommended on WSL2)
 ```
+
+**Use `--filesystem-mode` if** you're on WSL2 with Obsidian on the Windows
+side. The Local REST API plugin's TLS handshake gets RST'd by Windows
+Defender Firewall / Hyper-V firewall in most setups, even with bind=0.0.0.0,
+firewall rules added, and mirrored networking. Filesystem mode swaps the
+REST-API-based `obsidian` MCP for `mcp-server-filesystem` scoped to your
+vault path -- vault reads/writes work via plain filesystem operations.
+Trade-off: no Obsidian-side frontmatter search (replaced by recursive
+grep, which is fine at typical library sizes).
+
+**Claude Code detection.** If you have only the VS Code Anthropic extension
+installed (no separate Claude Code Windows install), `setup.sh` finds the
+extension's bundled `claude` binary at
+`~/.vscode-server/extensions/anthropic.claude-code-*-linux-x64/resources/native-binary/claude`
+and symlinks it into `~/.local/bin/claude`. No manual PATH edits needed.
 
 What `setup.sh` does (v6 -- parity with Path B's v5 wizard):
 
@@ -260,11 +276,11 @@ your block and pre-fill its prompts).
 
 ### Path B prerequisites
 
-Just one manual install:
+Just one manual install (and the VS Code Anthropic extension counts):
 
 | Tool | How |
 |---|---|
-| **Claude Code for Windows** | https://claude.ai/code -> install for Windows |
+| **Claude Code for Windows** | https://claude.ai/code -> install for Windows. **OR**: install the Anthropic VS Code extension -- `setup.ps1` auto-detects the extension's bundled `claude.exe` at `%USERPROFILE%\.vscode\extensions\anthropic.claude-code-*\resources\native-binary\claude.exe` and adds it to the session PATH. Persistent PATH update is suggested via a one-line `setx` if needed. |
 
 That's it. Python 3.12, Node LTS, Git for Windows, and `uv` are all
 auto-installed by `setup.ps1` via `winget` (Windows 10/11's built-in package

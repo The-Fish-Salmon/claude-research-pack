@@ -76,9 +76,34 @@ switch ($Mode) {
             Fail "winget not on PATH. Install 'App Installer' from the Microsoft Store, then re-run this script."
         }
 
+        # Find Claude Code. Look on PATH first; fall back to the VS Code
+        # extension's bundled binary at
+        # %USERPROFILE%\.vscode\extensions\anthropic.claude-code-*\resources\native-binary\claude.exe
+        # When the user has only the VS Code extension installed (no separate
+        # Claude Code Windows install), we add the extension's bin dir to the
+        # session PATH so the rest of setup can shell out to `claude`.
         $claudePath = Get-Command claude -ErrorAction SilentlyContinue
         if (-not $claudePath) {
-            Fail 'Claude Code CLI not on PATH. Install Claude Code for Windows from https://claude.ai/code, open a fresh PowerShell, then re-run this script.'
+            $vscodeExtRoot = Join-Path $env:USERPROFILE '.vscode\extensions'
+            if (Test-Path $vscodeExtRoot) {
+                $vscodeClaude = Get-ChildItem -Path $vscodeExtRoot -Filter 'anthropic.claude-code-*' -Directory -ErrorAction SilentlyContinue |
+                    Sort-Object LastWriteTime -Descending |
+                    ForEach-Object { Join-Path $_.FullName 'resources\native-binary\claude.exe' } |
+                    Where-Object { Test-Path $_ } |
+                    Select-Object -First 1
+                if ($vscodeClaude) {
+                    $claudeDir = Split-Path $vscodeClaude
+                    $env:PATH  = "$claudeDir;$env:PATH"
+                    Info "Claude Code: $vscodeClaude (from VS Code extension; added to session PATH)"
+                    $claudePath = Get-Command claude -ErrorAction SilentlyContinue
+                    Warn "VS Code extension's claude.exe is not on your persistent PATH. To use `"claude`" outside this session, either:"
+                    Warn "  (a) install Claude Code for Windows separately from https://claude.ai/code, or"
+                    Warn "  (b) add this dir to your user PATH:  setx PATH `"%PATH%;$claudeDir`""
+                }
+            }
+        }
+        if (-not $claudePath) {
+            Fail 'Claude Code CLI not found on PATH or in the VS Code extension. Install Claude Code for Windows from https://claude.ai/code (or the VS Code Anthropic extension), then re-run this script.'
         }
         Info "Claude Code: $($claudePath.Path)"
 
