@@ -10,7 +10,8 @@ the skeleton.
    methodology blueprint, search seeds). 300-800 words.
 2. **Investigation** -- work through the sub-questions one at a time. For each:
    - 3-5 MCP searches across the priority order (semantic-scholar -> paper-search ->
-     arxiv -> university-paper-access -> paper-mcp -> scihub).
+     arxiv -> paper-mcp). For paywalled full-text fetches, fall back to chrome-devtools-mcp
+     via the user's library proxy when arXiv / OA channels miss.
    - Read abstracts; identify 4-10 must-read papers per sub-question.
    - Download full text only for papers that will be cited.
    - For each downloaded paper, invoke the `paper-capture` skill so it lands in

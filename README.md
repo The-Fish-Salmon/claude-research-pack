@@ -92,9 +92,10 @@ before relying on Path C output for publication-grade work.
 ### MCP servers (installed by the bundled installer)
 
 - `arxiv`, `semantic-scholar`, `paper-search`, `paper-mcp` -- paper search & metadata
-- `university-paper-access` -- institutional full-text via Unpaywall
-- `scihub` -- last-resort PDF
+- `chrome-devtools` -- paywall bypass via the user's authenticated library proxy / SSO session. Drives a real Chrome with a persistent profile so the user signs in ONCE; subsequent runs reuse cookies. Defeats Wiley / ACS Cloudflare detection via the `--disable-blink-features=AutomationControlled` flag. See [USAGE.md §7](USAGE.md#7-how-do-i-get-paywalled-pdfs-through-my-institutions-subscriptions) and [skills/deep-research/references/paywall_workflow.md](skills/deep-research/references/paywall_workflow.md) for setup and the per-paper recipe.
 - `obsidian` -- read/search/write the Obsidian vault
+
+**Removed since v5:** `university-paper-access` (IP-only fetch with no SSO redirect handling -- silently saved publisher paywall HTML on auth failure, false positives) and `scihub` (Windows charmap encoding bug + legally grey + redundant once chrome-devtools-mcp + institutional access is wired up). The chrome-devtools path is strictly more capable. If upgrading from an older pack, the new installer leaves the legacy entries alone in your config; remove them manually.
 
 Two installers ship in this pack:
 
@@ -210,14 +211,27 @@ automatically.
 - **One pack, three runtimes.** WSL, Windows native, and Desktop ship in the same
   pack. Recipients pick by path; nothing is renamed across versions, so v1 users
   can `git pull` to v2 with zero migration.
-- **Bring your own institutional access.** `university-paper-access` uses
-  Unpaywall + your campus IP. If you don't have institutional access, the pack
-  still works via arXiv + (optionally) Sci-Hub.
+- **Bring your own institutional access.** `chrome-devtools-mcp` drives a real
+  Chrome with a persistent profile, so you sign into your library EZproxy or
+  SSO ONCE and the cookies persist across sessions. The pack also pulls open-access
+  copies via arXiv / paper-search PMC / Unpaywall when available -- you only need
+  the institutional path for paywalled journal originals.
 
 ---
 
 ## Versions and provenance
 
+- **v6.2** -- Paywall path replaced: chrome-devtools-mcp + library EZproxy supersedes
+  the legacy `university-paper-access` (IP-only, false-positive paywall HTML saves)
+  and `scihub` (Windows charmap bug, grey-zone) MCPs. Persistent Chrome profile at
+  `%USERPROFILE%\.claude\chrome-profile`; one-time SSO sign-in covers all subsequent
+  paywalled fetches. Cloudflare Turnstile defeated via `--disable-blink-features=AutomationControlled`.
+  See [USAGE.md §7](USAGE.md#7-how-do-i-get-paywalled-pdfs-through-my-institutions-subscriptions)
+  and [skills/deep-research/references/paywall_workflow.md](skills/deep-research/references/paywall_workflow.md).
+- **v6.1** -- Path A `--filesystem-mode` (replaces Obsidian Local-REST-API wrapper with
+  the official filesystem MCP scoped to the vault, sidesteps WSL2 firewall issues);
+  VS Code extension `claude` command detection.
+- **v6.0** -- Path A (WSL) overhaul: one-command install + feature parity with v5 Path B.
 - **v5.0** -- Path B (Windows-native Code) overhaul: one-command install
   with winget pre-flight, auto-detect vault path + REST API key, automatic
   vault bootstrap + Obsidian config, post-install self-test. Plus full

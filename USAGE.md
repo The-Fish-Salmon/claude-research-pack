@@ -14,7 +14,7 @@ Gemini's deep-research feature:
 
 | | Gemini Deep Research | This pack's `academic-deep-research` |
 |---|---|---|
-| Source | Google Search results | Semantic Scholar, arXiv, paper-search, university-paper-access, paper-mcp, Sci-Hub |
+| Source | Google Search results | Semantic Scholar, arXiv, paper-search, paper-mcp, plus chrome-devtools-mcp + library EZproxy for paywalled full-text |
 | Output destination | Chat | A draft note in your Obsidian vault `00_Inbox/` |
 | Citations resolve to | Web pages | Real DOIs / arXiv ids / Semantic Scholar paperIds |
 | Hallucination guard | Light | Iron Rules + 3x Devil's Advocate self-critique + post-composition citation pre-flight |
@@ -58,9 +58,10 @@ That's the default behavior of `deep-research` (Path A/B) /
    abstract), it invokes `paper-capture`, which downloads the PDF and
    writes a `{vault}/30_Literature/{citekey}.md` note. PDFs land at
    `{vault}/80_Attachments/papers/{citekey}.pdf`. Download priority for a
-   given paper: university-paper-access (institutional) -> arXiv (if it
-   has an arXiv id) -> paper-search per-source downloaders -> Sci-Hub
-   (last resort).
+   given paper: arXiv (if it has an arXiv id) -> paper-search per-source
+   downloaders (PMC, bioRxiv, medRxiv) -> chrome-devtools-mcp via library
+   EZproxy + authenticated browser session (paywalled journals -- see Q7
+   below).
 5. Drafts the deliverable.
 6. Re-verifies every citation against Semantic Scholar (citation pre-flight).
 7. Drops the draft in `{vault}/00_Inbox/research-{slug}-{date}.md`.
@@ -102,9 +103,10 @@ When done, check:
 - `{vault}/80_Attachments/papers/` -- one PDF per captured paper.
 - `{vault}/00_Inbox/` -- the synthesis draft.
 
-If a PDF didn't download (paywall, no institutional access, Sci-Hub
-blocked), the note still gets written with `pdf: null` so you can drop the
-PDF in manually later (see question 4).
+If a PDF didn't download (no library access, Cloudflare blocking, etc.),
+the note still gets written with `pdf: null` so you can drop the PDF in
+manually later (see question 4) or set up chrome-devtools-mcp + your
+library proxy (see question 7).
 
 ---
 
@@ -342,6 +344,40 @@ asks the first question.
 
 ---
 
+## 7. How do I get paywalled PDFs through my institution's subscriptions?
+
+The pack uses **chrome-devtools-mcp** + your library's EZproxy or institutional SSO. One-time setup, then PDF downloads from Wiley / ACS / IOP / Springer / Elsevier / IEEE work automatically.
+
+### One-time setup
+
+1. The pack installer adds `chrome-devtools` to your MCP config and creates `%USERPROFILE%\.claude\chrome-profile\` for a persistent Chrome profile. (Verify by running `.\scripts\path-b-selftest.ps1` -- it confirms the MCP is wired and Chrome stable is installed.)
+2. The first time you ask Claude to fetch a paywalled paper, Chrome opens visible. Ask Claude to navigate to your library's EZproxy login URL:
+
+   ```
+   Use chrome-devtools-mcp to open https://ezproxy.<your-institution>.edu/login
+   ```
+
+   Common patterns:
+   - OCLC EZproxy: `https://ezproxy.<institution>.edu/login`
+   - OCLC IDM (newer): `https://www-<institution>.idm.oclc.org/login`
+   - OpenAthens: `https://login.openathens.net/auth/<institution>.<tld>/<id>`
+
+3. Sign in via your institutional SSO (Shibboleth, ADFS, Okta -- whatever your school uses). Cookies persist in the chrome-devtools-mcp profile dir and survive across MCP restarts.
+
+### Per-paper usage
+
+Once signed in, just point the deep-research skill (or `/capture-paper`) at any DOI. It will route through chrome-devtools-mcp + your proxy automatically when arXiv / OA channels miss.
+
+If you hit a Cloudflare "Verify you are human" challenge (rare with the pack's default flags but possible on Wiley / ACS), click the checkbox in the visible Chrome window. The `cf_clearance` cookie covers ~30 minutes of subsequent same-domain requests.
+
+### Why this replaced the old `university-paper-access` + `scihub` MCPs
+
+The legacy `university-paper-access` did plain IP-based `httpx` requests with no SSO redirect handling -- and silently saved publisher paywall HTML pages as `paper.pdf` when auth was incomplete (false positive). `scihub` had a Windows charmap encoding bug that crashed on first request, and is legally grey besides. The chrome-devtools-mcp path uses your **real institutional subscription** through your **real authenticated browser session** -- legitimate access, no false positives, no grey-zone fallbacks.
+
+See [skills/deep-research/references/paywall_workflow.md](skills/deep-research/references/paywall_workflow.md) for the full per-paper recipe (publisher PDF URL patterns, Cloudflare workarounds, "Allow multiple downloads" prompt handling).
+
+---
+
 ## Cheat sheet
 
 | You want... | Path A/B (slash command) | Path C (free text) |
@@ -369,9 +405,10 @@ asks the first question.
   ours. If you see Claude using a built-in research feature instead, you
   said "deep research" by name. Re-prompt without that phrase.
 - If `paper-capture` reports `(PDF: no)`, the source-priority chain
-  (university-paper-access -> arXiv -> Sci-Hub) didn't land a file. The
-  note is still written with `pdf: null` -- drop the PDF in manually with
-  `ingest-pdf` once you have it.
+  (arXiv -> paper-search OA -> chrome-devtools via library proxy) didn't
+  land a file. The note is still written with `pdf: null` -- drop the
+  PDF in manually with `ingest-pdf` once you have it, or check question 7
+  to wire up chrome-devtools-mcp + your library proxy.
 - If the citation pre-flight flags an unverified citation, click through
   to confirm. The footnote in the draft tells you what was attempted.
 - See [INSTALL_WINDOWS.md §4](INSTALL_WINDOWS.md#4-common-troubleshooting)

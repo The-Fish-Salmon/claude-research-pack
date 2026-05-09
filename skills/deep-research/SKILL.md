@@ -103,12 +103,13 @@ For SEARCH (broad coverage):
 
 For FULL-TEXT DOWNLOAD (after a paper has been chosen):
 
-5. `university-paper-access` -- institutional download path via Unpaywall + on-campus IP. **First choice for full-text PDF** of any journal paper. Often returns a legal full-text where the user has institutional access.
-6. `arxiv` (download_paper) -- for arXiv ids only. Free, reliable, but only covers what's posted to arXiv.
-7. `paper-search` (download_*) -- per-source download from bioRxiv/medRxiv/PubMed/PMC.
-8. `scihub` -- last-resort PDF when institutional access fails. Note legal/network limitations.
+5. `arxiv` (download_paper) -- for arXiv ids only. Free, reliable, but only covers what's posted to arXiv. **Always prefer this when a paper has both a journal version and an arXiv preprint.**
+6. `paper-search` (download_*) -- per-source download from bioRxiv/medRxiv/PubMed/PMC. Free, OA-only, no auth needed.
+7. `chrome-devtools` -- paywalled journal papers via the user's authenticated library proxy / SSO session. **First choice for paywalled journal PDFs** when the user has institutional access. Drives a real Chrome with persistent cookies; works against Wiley / ACS / IOP / Springer / Elsevier / IEEE Cloudflare-protected endpoints. See [references/paywall_workflow.md](references/paywall_workflow.md) for the per-paper recipe and per-publisher PDF URL patterns.
 
 Always prefer **abstract-level reasoning** before downloading PDFs. Only download a paper when an agent has decided it actually needs the full text. Then capture it via the `paper-capture` skill (Iron Rule 6).
+
+**Removed in this version:** `university-paper-access` (only did plain IP-based fetch and silently saved publisher paywall HTML when auth was incomplete -- false positives) and `scihub` (Windows charmap bug + legally grey + redundant for users with institutional access). The chrome-devtools-based path is strictly more capable; both legacy servers can be deleted from old configs.
 
 ## Spawning sub-agents
 
@@ -153,7 +154,7 @@ Use these as the skeleton for the deliverable:
 APA 7.0 in-text and reference list. For each cited source:
 
 - DOI mandatory if it exists; arXiv id otherwise; URL only if neither.
-- Mark provenance: `[SS]` Semantic Scholar / `[XV]` arXiv / `[UPA]` university-access / `[SH]` Sci-Hub. This trail is what makes the integrity gate falsifiable.
+- Mark provenance: `[SS]` Semantic Scholar / `[XV]` arXiv / `[CDT]` chrome-devtools (publisher direct via library proxy) / `[OA]` open-access (paper-search PMC/bioRxiv/medRxiv). This trail is what makes the integrity gate falsifiable.
 
 ## Hand-off note format
 

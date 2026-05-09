@@ -39,9 +39,11 @@ else
     fl "claude CLI not on PATH. Install Claude Code from https://claude.ai/code"
 fi
 
-# 2. claude mcp list shows the expected 7 servers
+# 2. claude mcp list shows the expected 5 servers (Path A / WSL).
+# Note: chrome-devtools-mcp is NOT installed by Path A -- launching Chrome from
+# inside WSL is brittle. Do paywall work from a Windows-native Claude Code (Path B).
 # In filesystem mode, the obsidian REST-API server is replaced by vault-fs.
-expected=(arxiv semantic-scholar paper-search paper-mcp scihub university-paper-access)
+expected=(arxiv semantic-scholar paper-search paper-mcp)
 if jq -e '.mcpServers["vault-fs"]' "${HOME}/.claude.json" >/dev/null 2>&1; then
     expected+=(vault-fs)
 else
@@ -56,10 +58,7 @@ if command -v claude >/dev/null 2>&1; then
         fi
     done
     if [[ ${#missing[@]} -eq 0 ]]; then
-        ok "claude mcp list shows all 7 servers"
-    elif [[ ${#missing[@]} -eq 1 && "${missing[0]}" == "scihub" ]]; then
-        wn "scihub missing or red (often network-blocked; safe to ignore)"
-        ok "claude mcp list shows 6/7 servers (scihub tolerated)"
+        ok "claude mcp list shows all ${#expected[@]} servers"
     else
         fl "claude mcp list missing servers: ${missing[*]}"
     fi
@@ -72,10 +71,10 @@ if [[ ! -f "$claude_json" ]]; then
 else
     if jq -e '.mcpServers' "$claude_json" >/dev/null 2>&1; then
         n=$(jq '.mcpServers | length' "$claude_json" 2>/dev/null || echo 0)
-        if [[ "$n" -ge 7 ]]; then
+        if [[ "$n" -ge 5 ]]; then
             ok "~/.claude.json has $n mcpServers entries"
         else
-            fl "~/.claude.json has only $n mcpServers entries (expected >=7)"
+            fl "~/.claude.json has only $n mcpServers entries (expected >=5)"
         fi
     else
         fl "~/.claude.json failed to parse or has no mcpServers key"

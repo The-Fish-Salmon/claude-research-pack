@@ -13,9 +13,14 @@
 #   - uv (the Python package launcher), if missing
 #   - arxiv-mcp-server, semanticscholar-mcp-server, paper-mcp (uv tool install)
 #   - paper-search-mcp (resolved on each run via uv run --with)
-#   - the Sci-Hub-MCP-Server git clone
-#   - the university-paper-access server (copied from this package)
 #   - obsidian-wrapper.js dependencies (npm install)
+#
+# Paywall bypass on WSL: chrome-devtools-mcp is NOT installed by this script.
+# Reason: launching Chrome from inside WSL is brittle (no native Chrome; X server
+# or browser-url to a Windows-side Chrome is required). Recommended pattern:
+# do paywall work from a Windows-native Claude Code (Path B) where chrome-devtools-mcp
+# is configured automatically. See INSTALL_WINDOWS.md and skills/deep-research/
+# references/paywall_workflow.md.
 #
 # After install:
 #   - merges settings/claude.template.json into ~/.claude.json (preserves existing entries)
@@ -64,27 +69,7 @@ uv tool install paper-mcp || warn "paper-mcp install returned non-zero"
 # paper-search-mcp is invoked via `uv run --with paper-search-mcp` so it doesn't need a
 # global install -- first run will fetch and cache it.
 
-# 3. Sci-Hub-MCP-Server (git clone)
-SCIHUB_DIR="${TARGET_DIR}/Sci-Hub-MCP-Server"
-if [[ ! -d "${SCIHUB_DIR}/.git" ]]; then
-  log "Cloning Sci-Hub-MCP-Server"
-  git clone https://github.com/JackKuo666/Sci-Hub-MCP-Server.git "${SCIHUB_DIR}" || warn "clone failed -- set this up manually if you need scihub"
-else
-  log "Sci-Hub-MCP-Server already cloned"
-fi
-
-# 4. university-paper-access (copy from this package)
-UPA_SRC="${PACK_DIR}/mcp-servers/university-paper-access"
-UPA_DST="${TARGET_DIR}/university-paper-access"
-if [[ -d "${UPA_SRC}" ]]; then
-  log "Installing university-paper-access"
-  mkdir -p "${UPA_DST}"
-  cp -r "${UPA_SRC}/." "${UPA_DST}/"
-else
-  warn "university-paper-access source missing in pack -- skipping"
-fi
-
-# 5. Obsidian access: REST-API wrapper OR filesystem MCP, depending on mode.
+# 3. Obsidian access: REST-API wrapper OR filesystem MCP, depending on mode.
 #
 # PACK_FILESYSTEM_MODE=1 (set by setup.sh --filesystem-mode) replaces the
 # Local-REST-API-based obsidian MCP with the official filesystem MCP server,
@@ -120,7 +105,7 @@ else
   fi
 fi
 
-# 6. Merge MCP config into ~/.claude.json
+# 4. Merge MCP config into ~/.claude.json
 TEMPLATE="${PACK_DIR}/settings/claude.template.json"
 if [[ ! -f "${TEMPLATE}" ]]; then
   err "MCP template not found at ${TEMPLATE}"

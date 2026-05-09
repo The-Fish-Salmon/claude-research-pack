@@ -39,7 +39,7 @@ if (-not $claude) {
 }
 
 # 2. claude mcp list shows expected servers
-$expectedServers = @('arxiv', 'semantic-scholar', 'paper-search', 'paper-mcp', 'scihub', 'university-paper-access', 'obsidian')
+$expectedServers = @('arxiv', 'semantic-scholar', 'paper-search', 'paper-mcp', 'chrome-devtools', 'obsidian')
 if ($claude) {
     # Join into a single string: PowerShell's -notmatch on a string array returns
     # the non-matching elements (truthy for every iteration), not a boolean.
@@ -49,17 +49,34 @@ if ($claude) {
         if ($mcpOut -notmatch "\b$([regex]::Escape($s))\b") { $missing += $s }
     }
     if ($missing.Count -eq 0) {
-        Ok "claude mcp list shows all 7 servers"
-    } elseif ($missing.Count -eq 1 -and $missing[0] -eq 'scihub') {
-        # Sci-Hub mirrors are blocked on many networks; tolerable.
-        Warn "scihub missing or red (often network-blocked; safe to ignore)"
-        Ok "claude mcp list shows 6/7 servers (scihub tolerated)"
+        Ok "claude mcp list shows all 6 servers"
     } else {
         Fail "claude mcp list missing servers: $($missing -join ', ')"
     }
 }
 
-# 3. ~/.claude.json parses; mcpServers has 7 entries
+# 2b. Chrome stable available (chrome-devtools-mcp launches it for paywall bypass).
+$chromeCandidates = @(
+    "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
+    "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
+    "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
+)
+$chromePath = $chromeCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+if ($chromePath) {
+    Ok "Chrome detected at $chromePath (chrome-devtools-mcp will use this)"
+} else {
+    Warn "Chrome stable not found. chrome-devtools-mcp paywall bypass requires Chrome (https://www.google.com/chrome/) or pass --channel=canary|beta|dev."
+}
+
+# 2c. chrome-devtools-mcp persistent profile dir exists.
+$chromeProfile = Join-Path $env:USERPROFILE '.claude\chrome-profile'
+if (Test-Path $chromeProfile) {
+    Ok "chrome-devtools profile dir exists at $chromeProfile"
+} else {
+    Warn "chrome-devtools profile dir missing at $chromeProfile (will be created on first use; sign into your library proxy then to bootstrap cookies)"
+}
+
+# 3. ~/.claude.json parses; mcpServers has >=6 entries
 $claudeJson = Join-Path $env:USERPROFILE '.claude.json'
 if (-not (Test-Path $claudeJson)) {
     Fail "~/.claude.json not found at $claudeJson"
@@ -67,10 +84,10 @@ if (-not (Test-Path $claudeJson)) {
     try {
         $obj = Get-Content -Raw -Path $claudeJson | ConvertFrom-Json
         $count = ($obj.mcpServers.PSObject.Properties | Measure-Object).Count
-        if ($count -ge 7) {
+        if ($count -ge 6) {
             Ok "~/.claude.json has $count mcpServers entries"
         } else {
-            Fail "~/.claude.json has only $count mcpServers entries (expected >=7)"
+            Fail "~/.claude.json has only $count mcpServers entries (expected >=6)"
         }
     } catch {
         Fail "~/.claude.json failed to parse: $_"
