@@ -29,6 +29,9 @@ Thumbs.db
 *.swp
 *~
 
+# Stray Obsidian metadata if the pack root is ever opened as a vault
+.obsidian/
+
 # Local secrets — should never appear, but defense-in-depth
 .env
 .env.*

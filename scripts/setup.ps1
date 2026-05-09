@@ -261,9 +261,9 @@ switch ($Mode) {
         New-Item -ItemType Directory -Force -Path (Join-Path $ClaudeDir 'hooks')    | Out-Null
         New-Item -ItemType Directory -Force -Path (Join-Path $ClaudeDir 'commands') | Out-Null
 
-        # Skills (now includes v5 ingest-pdf + research-copilot)
+        # Skills (now includes v5 ingest-pdf + research-copilot + use-project)
         Info "Copying skills -> $ClaudeDir\skills\"
-        foreach ($s in @('deep-research', 'paper-capture', 'lit-status', 'handoff', 'ingest-pdf', 'research-copilot')) {
+        foreach ($s in @('deep-research', 'paper-capture', 'lit-status', 'handoff', 'ingest-pdf', 'research-copilot', 'use-project')) {
             $src = Join-Path $PackDir "skills\$s"
             if (Test-Path $src) {
                 $dst = Join-Path $ClaudeDir "skills\$s"
@@ -280,9 +280,9 @@ switch ($Mode) {
             if (Test-Path $src) { Copy-Item -Force -Path $src -Destination (Join-Path $ClaudeDir "hooks\$h") }
         }
 
-        # Commands (now includes v5 ingest-pdf + copilot)
+        # Commands (now includes v5 ingest-pdf + copilot + use-project)
         Info "Copying slash commands -> $ClaudeDir\commands\"
-        foreach ($c in @('research.md', 'capture-paper.md', 'lit-map.md', 'status.md', 'port-to-vault.md', 'ingest-pdf.md', 'copilot.md')) {
+        foreach ($c in @('research.md', 'capture-paper.md', 'lit-map.md', 'status.md', 'port-to-vault.md', 'ingest-pdf.md', 'copilot.md', 'use-project.md')) {
             $src = Join-Path $PackDir "commands\$c"
             if (Test-Path $src) { Copy-Item -Force -Path $src -Destination (Join-Path $ClaudeDir "commands\$c") }
         }
@@ -291,6 +291,29 @@ switch ($Mode) {
         Info 'Installing MCP servers (Native target)'
         & (Join-Path $PackDir 'mcp-servers\install-mcp-servers.ps1') -Target Native
         if ($LASTEXITCODE -ne 0) { Fail 'MCP install script returned non-zero -- see output above.' }
+
+        # ---- PowerShell profile: dot-source Set-ActiveProject.ps1 ----
+        # Ships Set-ActiveProject + Get-ActiveProject into every new PowerShell
+        # session. Idempotent: matched by an exact-string check on the source line.
+        $setActiveScript = Join-Path $PackDir 'scripts\Set-ActiveProject.ps1'
+        if (Test-Path $setActiveScript) {
+            $sourceLine = ". `"$setActiveScript`""
+            $profilePath = $PROFILE.CurrentUserAllHosts  # works for both pwsh and Windows PowerShell
+            $profileDir  = Split-Path $profilePath -Parent
+            New-Item -ItemType Directory -Force -Path $profileDir | Out-Null
+            $alreadyWired = $false
+            if (Test-Path $profilePath) {
+                $alreadyWired = (Select-String -Path $profilePath -Pattern ([regex]::Escape($setActiveScript)) -SimpleMatch -Quiet)
+            }
+            if (-not $alreadyWired) {
+                Add-Content -Path $profilePath -Value "`n# Claude Research Pack -- multi-project switcher`n$sourceLine`n"
+                Info "  Wired Set-ActiveProject into $profilePath"
+            } else {
+                Info "  Set-ActiveProject already wired in $profilePath -- skipping"
+            }
+        } else {
+            Warn "scripts\Set-ActiveProject.ps1 not found in pack -- skipping profile wiring"
+        }
 
         # 5. Merge settings.json (hooks, statusline, model) -- PowerShell native JSON merge.
         $tplPath    = Join-Path $PackDir 'settings\settings.windows.template.json'
@@ -363,11 +386,16 @@ switch ($Mode) {
 
   Open a fresh PowerShell window (env vars need it) and try:
     claude
+    /use-project ecram --create   # scaffold + activate a sub-project (kebab-case slug)
     /status
     /research --mode quick "ion-gated transistors"
     /ingest-pdf D:\downloads\some-paper.pdf
     /copilot
     /lit-map summary
+
+  Multi-project: one vault, many sub-projects under 10_Projects/<slug>/.
+    Set-ActiveProject <slug>            # from any PowerShell window
+    /use-project <slug>                 # from inside Claude Code
 
   Re-run the self-test any time:
     .\scripts\path-b-selftest.ps1

@@ -86,6 +86,7 @@ before relying on Path C output for publication-grade work.
 - `/research [--mode <name>] <topic>`
 - `/capture-paper <doi|arxiv|url|title> [--citekey <key>] [--project <slug>]`
 - `/lit-map [summary|unread|tags|gaps|orphans|citation-map <citekey>]`
+- `/use-project <slug> [--create]` -- switch the active sub-project (multi-project vaults)
 - `/status`, `/port-to-vault`
 
 ### MCP servers (installed by the bundled installer)
@@ -153,6 +154,46 @@ PS> .\scripts\setup.ps1 -Mode Desktop   # Path C
 
 ---
 
+## Multi-project workflow
+
+**One vault, many sub-projects.** Don't make a separate Obsidian vault per
+research topic -- you'll fragment your literature library, end up maintaining
+parallel `claude_desktop_config.json` entries, and lose cross-project citation
+reuse. The pack expects one vault per researcher, with each line of work as a
+sub-folder under `10_Projects/<slug>/`:
+
+```
+<vault>/
+  30_Literature/         <- shared library (citekey.md per paper)
+  80_Attachments/papers/ <- shared PDF store
+  10_Projects/
+    <slug-a>/
+      overview.md        <- frontmatter: project, status, started, goal, citekeys
+      runs/, notes/, figures/
+    <slug-b>/
+      overview.md
+```
+
+`30_Literature/` and `80_Attachments/` are **shared** -- a paper captured for
+project A is automatically available to project B. The `citekeys:` frontmatter
+on each project's `overview.md` is what `lit-status` and `lit-map` use to
+cross-reference papers to projects.
+
+**Switching projects.**
+
+- From inside Claude Code: `/use-project <slug>` (or `/use-project <slug> --create`
+  to scaffold a new one from `70_Templates/project-overview.md`).
+- From any PowerShell window: `Set-ActiveProject <slug>` (the function ships
+  in your `$PROFILE` after Path B install -- see [scripts/Set-ActiveProject.ps1](scripts/Set-ActiveProject.ps1)).
+
+Both update `10_Projects/*/overview.md` frontmatter (`status: active` on the
+new one, `status: paused` on others) **and** set `ACTIVE_PROJECT` for the next
+session. Skills like `statusline`, `/status`, `/handoff`, and `precompact-handoff`
+all read this signal so the rest of the pack scopes to the right project
+automatically.
+
+---
+
 ## Design principles
 
 - **Citation discipline first.** A "fact" without a citation that resolves through
@@ -162,6 +203,10 @@ PS> .\scripts\setup.ps1 -Mode Desktop   # Path C
 - **Vault is the canonical brain.** Drafts land in `00_Inbox/` for user curation;
   only `paper-capture` writes directly to `30_Literature/`. Project notes accumulate
   citekeys; the same papers come back as context on the next project.
+- **One vault, many projects.** Sub-projects live under `10_Projects/<slug>/`.
+  The shared library (`30_Literature/`) means citation reuse is free; switching
+  projects is `Set-ActiveProject <slug>` or `/use-project <slug>`. See
+  *Multi-project workflow* above.
 - **One pack, three runtimes.** WSL, Windows native, and Desktop ship in the same
   pack. Recipients pick by path; nothing is renamed across versions, so v1 users
   can `git pull` to v2 with zero migration.

@@ -41,6 +41,57 @@ for what this means in practice.
 
 ---
 
+## 0.5 Vault shape: one vault, many sub-projects
+
+Read this **before** you create your vault. It's the single most common mistake
+new users make.
+
+**Don't create one Obsidian vault per research topic.** The pack expects one
+vault per researcher (or per "research life") with each line of work as a
+sub-folder under `10_Projects/<slug>/`. Multiple vaults means:
+
+- Fragmented literature library -- a paper captured for project A is invisible
+  to project B; you'll re-capture the same DOIs.
+- One `obsidian-mcp-tools` MCP entry per vault in `claude_desktop_config.json`,
+  or constant manual swapping.
+- `OBSIDIAN_VAULT_PATH` is a single system-wide env var; you'd be `setx`-ing it
+  every time you switched topics.
+
+**Correct shape:**
+
+```
+<your-vault>/                         <- one Obsidian vault
+  30_Literature/                       <- shared across all projects
+  80_Attachments/papers/               <- shared PDFs
+  10_Projects/
+    <slug-a>/                          <- one sub-project (e.g. ecram)
+      overview.md                      <- frontmatter: project, status, started, goal, citekeys
+    <slug-b>/                          <- another sub-project (e.g. ion-gated-tx)
+      overview.md
+```
+
+**Switching projects after install:**
+
+- From inside Claude Code: `/use-project <slug>` (or `/use-project <slug> --create`
+  to scaffold a new one from `70_Templates/project-overview.md`).
+- From any PowerShell window: `Set-ActiveProject <slug>` -- the function ships
+  in your `$PROFILE` after Path B install (sourced from
+  `<pack>/scripts/Set-ActiveProject.ps1`).
+
+Both update the project frontmatter (`status: active` on the new one,
+`status: paused` on others) **and** set `ACTIVE_PROJECT` for next session.
+Skills like `statusline`, `/status`, `/handoff`, and `precompact-handoff`
+read this signal so the rest of the pack scopes to the right project
+automatically.
+
+If you already have one vault per project and want to consolidate, the
+mechanical steps are: pick one as the new root, create `10_Projects/<old-slugs>/`
+folders inside it, move each former-vault's `30_Literature/` and
+`80_Attachments/papers/` contents into the unified vault's shared folders,
+update `OBSIDIAN_VAULT_PATH`, and restart Claude.
+
+---
+
 ## 1. Common prerequisites (all three paths)
 
 You need (in addition to path-specific prereqs below):
