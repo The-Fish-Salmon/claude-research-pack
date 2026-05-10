@@ -14,7 +14,7 @@ When the metadata is resolved and we have a DOI / arXiv id, try the sources in t
    - Paywalled journal articles via the user's authenticated library proxy session.
    - Requires the user to have logged into their library EZproxy / institutional SSO once in the chrome-devtools-mcp Chrome profile (`%USERPROFILE%/.claude/chrome-profile`). Cookies persist across sessions.
    - The recipe: navigate to `https://<ezproxy-host>/login?url=<publisher-landing-url>`, then `evaluate_script` issuing a same-origin `fetch(<pdf-url>, {credentials: 'include'})`, then trigger a download via `URL.createObjectURL(blob)` + `<a download>` click.
-   - See [skills/deep-research/references/paywall_workflow.md](../../deep-research/references/paywall_workflow.md) for the per-publisher PDF URL patterns (Wiley pdfdirect, ACS pdf?ref=article_openPDF, IOP /article/X/pdf, IEEE stampPDF/getPDF.jsp, etc.) and Cloudflare workarounds.
+   - See [academic-deep-research/references/paywall_workflow.md](../../academic-deep-research/references/paywall_workflow.md) for the per-publisher PDF URL patterns (Wiley pdfdirect, ACS pdf?ref=article_openPDF, IOP /article/X/pdf, IEEE stampPDF/getPDF.jsp, etc.) and Cloudflare workarounds.
 
 ## Failure handling
 
