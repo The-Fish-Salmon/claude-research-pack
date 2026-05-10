@@ -40,7 +40,7 @@ mcp__chrome-devtools__navigate_page
   url = https://<ezproxy-host>/login?url=https://<publisher-landing-url>
 ```
 
-The proxy redirects to the publisher's landing page with auth cookies attached. You can verify access by snapshotting the page — look for the institution badge (e.g. "RIT Libraries", "Access provided by ...") or the presence of a "Download PDF" link.
+The proxy redirects to the publisher's landing page with auth cookies attached. You can verify access by snapshotting the page — look for an institution badge (e.g. "Access provided by &lt;Your University&gt;", "&lt;Your University&gt; Libraries") or the presence of a "Download PDF" link.
 
 ### 2. Fetch the PDF via same-origin JavaScript
 

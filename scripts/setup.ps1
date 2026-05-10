@@ -332,7 +332,7 @@ switch ($Mode) {
         # WHY: Claude Code on Windows runs hooks via Git Bash. Bash does not expand cmd-style
         # %VAR% placeholders, and treats unknown backslash escapes (\U \k \. \h \s) as no-ops,
         # so a raw "%USERPROFILE%\.claude\hooks\foo.py" -- or even an expanded
-        # "C:\Users\kxsps\.claude\hooks\foo.py" -- arrives at Python with the backslashes
+        # "C:\Users\<username>\.claude\hooks\foo.py" -- arrives at Python with the backslashes
         # eaten. Forward slashes survive bash quoting and work fine for Python's open() and
         # PowerShell's -File argument on Windows.
         function Expand-EnvInTree {
