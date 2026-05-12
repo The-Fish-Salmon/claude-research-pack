@@ -8,8 +8,9 @@ making. Read this once at the start of any non-trivial run.
 
 - **Iron Rules** -- all 7 rules apply identically. No claim without citation, no
   fabricated DOIs, vault writes go to `00_Inbox/`, etc.
-- **MCP servers** -- all 7 are wired up the same way (semantic-scholar, paper-search,
-  arxiv, university-paper-access, paper-mcp, scihub, obsidian).
+- **MCP servers** -- all 6 are wired up the same way (semantic-scholar, paper-search,
+  arxiv, paper-mcp, chrome-devtools, obsidian). `university-paper-access` and `scihub`
+  were removed in v6.2; chrome-devtools-mcp + the user's library proxy supersedes both.
 - **Modes** -- same 7 modes (full / quick / lit-review / fact-check / socratic /
   systematic-review / review).
 - **Templates** -- identical skeletons for the deliverables.

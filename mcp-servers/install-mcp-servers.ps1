@@ -17,9 +17,8 @@
 #   - uv (the Python package launcher), if missing -- via official PowerShell installer
 #   - arxiv-mcp-server, semanticscholar-mcp-server, paper-mcp (uv tool install)
 #   - paper-search-mcp (resolved on first run via uv run --with)
-#   - the Sci-Hub-MCP-Server git clone
-#   - the university-paper-access server (copied from this package)
 #   - obsidian-wrapper.js dependencies (npm install)
+#   - chrome-devtools-mcp pre-fetched via npx (paywall bypass via authenticated browser)
 #
 # After install:
 #   - merges the appropriate template into the chosen settings file (PowerShell native JSON merge -- no jq)
@@ -82,36 +81,60 @@ if (-not (Get-Command 'uv' -ErrorAction SilentlyContinue)) {
 }
 Require-Cmd 'uv' 'uv install failed -- check the output above and rerun.'
 
-# 2. uv-installed MCP servers (idempotent)
+# Persist uv's bin dir in the user PATH so GUI apps (Claude Desktop) can find `uv` at launch.
+# Claude Desktop is started from the Start menu and inherits only the *persistent* user environment --
+# PATH changes made in the current PowerShell session are NOT visible to it.
+$uvBin = Join-Path $env:USERPROFILE '.local\bin'
+if (Test-Path $uvBin) {
+    $userPath = [Environment]::GetEnvironmentVariable('PATH', 'User')
+    if (-not ($userPath -split ';' | Where-Object { $_ -ieq $uvBin })) {
+        [Environment]::SetEnvironmentVariable('PATH', "$uvBin;$userPath", 'User')
+        Log "Added $uvBin to persistent user PATH. Sign out and back in before launching Claude Desktop."
+    } else {
+        Log "$uvBin already in persistent user PATH."
+    }
+}
+
+# 2. uv-installed MCP servers (pre-cached for faster first-run via `uv run --with`)
+# NOTE: The MCP config no longer invokes these by bare command name -- it uses
+# `uv run --with <pkg> <cmd>` so PATH is not required at runtime. The installs
+# below are kept to pre-populate uv's cache and speed up first launch.
 foreach ($pkg in @('arxiv-mcp-server', 'semanticscholar-mcp-server', 'paper-mcp')) {
-    Log "Installing $pkg"
+    Log "Pre-caching $pkg"
     & uv tool install $pkg
     if ($LASTEXITCODE -ne 0) { Warn "$pkg install returned non-zero (may already be installed at the same version)" }
 }
 # paper-search-mcp is invoked via `uv run --with paper-search-mcp` so no global install needed.
 
-# 3. Sci-Hub-MCP-Server (git clone)
-$SciHubDir = Join-Path $TargetDir 'Sci-Hub-MCP-Server'
-if (-not (Test-Path (Join-Path $SciHubDir '.git'))) {
-    Log 'Cloning Sci-Hub-MCP-Server'
-    & git clone https://github.com/JackKuo666/Sci-Hub-MCP-Server.git $SciHubDir
-    if ($LASTEXITCODE -ne 0) { Warn 'clone failed -- set this up manually if you need scihub' }
+# 3. chrome-devtools-mcp -- pre-fetch the npm package + create persistent profile dir.
+#
+# This is the paywall-bypass path. Replaces the legacy university-paper-access
+# (IP-only fetch, silently saved paywall HTML on failure) and scihub (Windows
+# charmap encoding bug, legally grey) servers. The user signs into their library
+# proxy / publisher SSO ONCE in the persisted Chrome profile; every subsequent
+# session reuses those cookies.
+$ChromeProfileDir = Join-Path $env:USERPROFILE '.claude\chrome-profile'
+New-Item -ItemType Directory -Force -Path $ChromeProfileDir | Out-Null
+Log "Chrome profile dir at $ChromeProfileDir (persistent across sessions)"
+
+Log 'Pre-fetching chrome-devtools-mcp (first run is slow otherwise)'
+& npx -y chrome-devtools-mcp@latest --version *> $null
+if ($LASTEXITCODE -ne 0) { Warn 'chrome-devtools-mcp pre-fetch returned non-zero -- check Node >= 20.19' }
+
+# Verify Chrome stable is installed (chrome-devtools-mcp launches Chrome).
+$ChromeCandidates = @(
+    "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
+    "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
+    "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
+)
+$ChromePath = $ChromeCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+if ($ChromePath) {
+    Log "Chrome detected at $ChromePath"
 } else {
-    Log 'Sci-Hub-MCP-Server already cloned'
+    Warn 'Chrome stable not found in default locations. Install from https://www.google.com/chrome/ before using the chrome-devtools MCP. (Other channels: pass --channel=canary|beta|dev to chrome-devtools-mcp.)'
 }
 
-# 4. university-paper-access (copy from this package)
-$UpaSrc = Join-Path $PackDir 'mcp-servers\university-paper-access'
-$UpaDst = Join-Path $TargetDir 'university-paper-access'
-if (Test-Path $UpaSrc) {
-    Log 'Installing university-paper-access'
-    New-Item -ItemType Directory -Force -Path $UpaDst | Out-Null
-    Copy-Item -Recurse -Force -Path (Join-Path $UpaSrc '*') -Destination $UpaDst
-} else {
-    Warn 'university-paper-access source missing in pack -- skipping'
-}
-
-# 5. obsidian-wrapper.js
+# 4. obsidian-wrapper.js
 $ObsSrc = Join-Path $PackDir 'mcp-servers\obsidian-wrapper.js'
 $ObsDst = Join-Path $TargetDir 'obsidian-wrapper.js'
 if (Test-Path $ObsSrc) {
@@ -132,7 +155,7 @@ if (Test-Path $ObsSrc) {
     Warn 'obsidian-wrapper.js missing in pack -- skipping'
 }
 
-# 6. Merge MCP config into the chosen settings file (PowerShell native JSON merge -- no jq).
+# 5. Merge MCP config into the chosen settings file (PowerShell native JSON merge -- no jq).
 $Template = Join-Path $PackDir "settings\$TemplateName"
 if (-not (Test-Path $Template)) {
     Err "MCP template not found at $Template"

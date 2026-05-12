@@ -86,14 +86,16 @@ before relying on Path C output for publication-grade work.
 - `/research [--mode <name>] <topic>`
 - `/capture-paper <doi|arxiv|url|title> [--citekey <key>] [--project <slug>]`
 - `/lit-map [summary|unread|tags|gaps|orphans|citation-map <citekey>]`
+- `/use-project <slug> [--create]` -- switch the active sub-project (multi-project vaults)
 - `/status`, `/port-to-vault`
 
 ### MCP servers (installed by the bundled installer)
 
 - `arxiv`, `semantic-scholar`, `paper-search`, `paper-mcp` -- paper search & metadata
-- `university-paper-access` -- institutional full-text via Unpaywall
-- `scihub` -- last-resort PDF
+- `chrome-devtools` -- paywall bypass via the user's authenticated library proxy / SSO session. Drives a real Chrome with a persistent profile so the user signs in ONCE; subsequent runs reuse cookies. Defeats Wiley / ACS Cloudflare detection via the `--disable-blink-features=AutomationControlled` flag. See [USAGE.md §7](USAGE.md#7-how-do-i-get-paywalled-pdfs-through-my-institutions-subscriptions) and [skills/deep-research/references/paywall_workflow.md](skills/deep-research/references/paywall_workflow.md) for setup and the per-paper recipe.
 - `obsidian` -- read/search/write the Obsidian vault
+
+**Removed since v5:** `university-paper-access` (IP-only fetch with no SSO redirect handling -- silently saved publisher paywall HTML on auth failure, false positives) and `scihub` (Windows charmap encoding bug + legally grey + redundant once chrome-devtools-mcp + institutional access is wired up). The chrome-devtools path is strictly more capable. If upgrading from an older pack, the new installer leaves the legacy entries alone in your config; remove them manually.
 
 Two installers ship in this pack:
 
@@ -153,6 +155,46 @@ PS> .\scripts\setup.ps1 -Mode Desktop   # Path C
 
 ---
 
+## Multi-project workflow
+
+**One vault, many sub-projects.** Don't make a separate Obsidian vault per
+research topic -- you'll fragment your literature library, end up maintaining
+parallel `claude_desktop_config.json` entries, and lose cross-project citation
+reuse. The pack expects one vault per researcher, with each line of work as a
+sub-folder under `10_Projects/<slug>/`:
+
+```
+<vault>/
+  30_Literature/         <- shared library (citekey.md per paper)
+  80_Attachments/papers/ <- shared PDF store
+  10_Projects/
+    <slug-a>/
+      overview.md        <- frontmatter: project, status, started, goal, citekeys
+      runs/, notes/, figures/
+    <slug-b>/
+      overview.md
+```
+
+`30_Literature/` and `80_Attachments/` are **shared** -- a paper captured for
+project A is automatically available to project B. The `citekeys:` frontmatter
+on each project's `overview.md` is what `lit-status` and `lit-map` use to
+cross-reference papers to projects.
+
+**Switching projects.**
+
+- From inside Claude Code: `/use-project <slug>` (or `/use-project <slug> --create`
+  to scaffold a new one from `70_Templates/project-overview.md`).
+- From any PowerShell window: `Set-ActiveProject <slug>` (the function ships
+  in your `$PROFILE` after Path B install -- see [scripts/Set-ActiveProject.ps1](scripts/Set-ActiveProject.ps1)).
+
+Both update `10_Projects/*/overview.md` frontmatter (`status: active` on the
+new one, `status: paused` on others) **and** set `ACTIVE_PROJECT` for the next
+session. Skills like `statusline`, `/status`, `/handoff`, and `precompact-handoff`
+all read this signal so the rest of the pack scopes to the right project
+automatically.
+
+---
+
 ## Design principles
 
 - **Citation discipline first.** A "fact" without a citation that resolves through
@@ -162,17 +204,34 @@ PS> .\scripts\setup.ps1 -Mode Desktop   # Path C
 - **Vault is the canonical brain.** Drafts land in `00_Inbox/` for user curation;
   only `paper-capture` writes directly to `30_Literature/`. Project notes accumulate
   citekeys; the same papers come back as context on the next project.
+- **One vault, many projects.** Sub-projects live under `10_Projects/<slug>/`.
+  The shared library (`30_Literature/`) means citation reuse is free; switching
+  projects is `Set-ActiveProject <slug>` or `/use-project <slug>`. See
+  *Multi-project workflow* above.
 - **One pack, three runtimes.** WSL, Windows native, and Desktop ship in the same
   pack. Recipients pick by path; nothing is renamed across versions, so v1 users
   can `git pull` to v2 with zero migration.
-- **Bring your own institutional access.** `university-paper-access` uses
-  Unpaywall + your campus IP. If you don't have institutional access, the pack
-  still works via arXiv + (optionally) Sci-Hub.
+- **Bring your own institutional access.** `chrome-devtools-mcp` drives a real
+  Chrome with a persistent profile, so you sign into your library EZproxy or
+  SSO ONCE and the cookies persist across sessions. The pack also pulls open-access
+  copies via arXiv / paper-search PMC / Unpaywall when available -- you only need
+  the institutional path for paywalled journal originals.
 
 ---
 
 ## Versions and provenance
 
+- **v6.2** -- Paywall path replaced: chrome-devtools-mcp + library EZproxy supersedes
+  the legacy `university-paper-access` (IP-only, false-positive paywall HTML saves)
+  and `scihub` (Windows charmap bug, grey-zone) MCPs. Persistent Chrome profile at
+  `%USERPROFILE%\.claude\chrome-profile`; one-time SSO sign-in covers all subsequent
+  paywalled fetches. Cloudflare Turnstile defeated via `--disable-blink-features=AutomationControlled`.
+  See [USAGE.md §7](USAGE.md#7-how-do-i-get-paywalled-pdfs-through-my-institutions-subscriptions)
+  and [skills/deep-research/references/paywall_workflow.md](skills/deep-research/references/paywall_workflow.md).
+- **v6.1** -- Path A `--filesystem-mode` (replaces Obsidian Local-REST-API wrapper with
+  the official filesystem MCP scoped to the vault, sidesteps WSL2 firewall issues);
+  VS Code extension `claude` command detection.
+- **v6.0** -- Path A (WSL) overhaul: one-command install + feature parity with v5 Path B.
 - **v5.0** -- Path B (Windows-native Code) overhaul: one-command install
   with winget pre-flight, auto-detect vault path + REST API key, automatic
   vault bootstrap + Obsidian config, post-install self-test. Plus full

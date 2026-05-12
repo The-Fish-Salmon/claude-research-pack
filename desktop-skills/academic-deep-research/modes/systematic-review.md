@@ -29,8 +29,9 @@ and the context-bloat risk is highest.
      threshold).
    The user MUST approve the protocol before phase 2.
 2. **Search & retrieval** -- work through databases sequentially. Use `paper-search`
-   and `semantic-scholar` as primary; `arxiv` only if topic is in scope;
-   `university-paper-access` for full text.
+   and `semantic-scholar` as primary; `arxiv` for full text whenever both an arXiv
+   preprint and a journal version exist; `chrome-devtools` (via the user's library
+   proxy) for paywalled full text only when no OA copy exists.
 3. **PRISMA flow** -- track at every stage:
    - Records identified (per database)
    - Records after dedup

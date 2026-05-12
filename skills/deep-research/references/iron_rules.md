@@ -58,3 +58,15 @@ Long research runs span sessions. At the end of a run, ensure:
 - The Inbox draft note exists and is complete.
 - Every paper that was downloaded has a `30_Literature/{citekey}.md` note via the `paper-capture` skill.
 - The TodoWrite list reflects any unfinished follow-ups (the Stop hook will persist them).
+
+## 8. Semantic Scholar budget
+
+The Semantic Scholar Graph API is the single highest-quality citation source and the backbone of the citation-discipline gate. With an issued API key the default rate is **1 request per second, cumulative across all endpoints** (search, paper-details, citations, references, all share one bucket). Without a key the search endpoint is unreliable enough that the gate fails open. Treat S2 traffic as a budgeted resource:
+
+- **Use S2 for resolution and pre-flight, not for discovery.** Run open-ended literature search through `paper-search` (arXiv / bioRxiv / medRxiv / PubMed / Google Scholar) and `arxiv`. Reserve S2 for: resolving a known DOI / arXiv id to canonical metadata, citation-graph traversal on a specific load-bearing paper, and the final citation pre-flight pass.
+- **Serialize S2 calls across parallel sub-agents.** When multiple investigators are running concurrently, do NOT let each one fire S2 calls independently. The investigator agent prompt enforces this: each investigator must explicitly note "S2 call planned" in its findings and the spawning agent must space them at least 1.1 seconds apart. When in doubt, run a single S2-aware investigator sequentially rather than three in parallel.
+- **A 429 from S2 is transient, not a not-found.** Retry with backoff (3 attempts, 2s/4s/8s). Only a clean 404 permits marking a citation `[UNVERIFIED]`.
+- **Cap parallel investigator count at 2 when S2 is the primary metadata path.** The `full` mode default of 3 parallel investigators (see deep-research/SKILL.md "Spawning sub-agents") is too aggressive against a 1 RPS budget. Reduce to 2 unless the user has confirmed a higher rate limit or arxiv/paper-search are doing the heavy lifting.
+- **Cache aggressively.** `paper-capture` writes every resolved paper to `30_Literature/{citekey}.md`. Before calling S2 for a paper's metadata, check whether the note already exists — same-DOI re-captures should hit the local cache, not the API.
+
+If the user reports a different S2 rate limit (some institutional keys get 10 RPS), they can override these caps for that session.

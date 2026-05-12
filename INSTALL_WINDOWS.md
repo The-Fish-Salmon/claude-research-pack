@@ -41,6 +41,57 @@ for what this means in practice.
 
 ---
 
+## 0.5 Vault shape: one vault, many sub-projects
+
+Read this **before** you create your vault. It's the single most common mistake
+new users make.
+
+**Don't create one Obsidian vault per research topic.** The pack expects one
+vault per researcher (or per "research life") with each line of work as a
+sub-folder under `10_Projects/<slug>/`. Multiple vaults means:
+
+- Fragmented literature library -- a paper captured for project A is invisible
+  to project B; you'll re-capture the same DOIs.
+- One `obsidian-mcp-tools` MCP entry per vault in `claude_desktop_config.json`,
+  or constant manual swapping.
+- `OBSIDIAN_VAULT_PATH` is a single system-wide env var; you'd be `setx`-ing it
+  every time you switched topics.
+
+**Correct shape:**
+
+```
+<your-vault>/                         <- one Obsidian vault
+  30_Literature/                       <- shared across all projects
+  80_Attachments/papers/               <- shared PDFs
+  10_Projects/
+    <slug-a>/                          <- one sub-project (e.g. ecram)
+      overview.md                      <- frontmatter: project, status, started, goal, citekeys
+    <slug-b>/                          <- another sub-project (e.g. ion-gated-tx)
+      overview.md
+```
+
+**Switching projects after install:**
+
+- From inside Claude Code: `/use-project <slug>` (or `/use-project <slug> --create`
+  to scaffold a new one from `70_Templates/project-overview.md`).
+- From any PowerShell window: `Set-ActiveProject <slug>` -- the function ships
+  in your `$PROFILE` after Path B install (sourced from
+  `<pack>/scripts/Set-ActiveProject.ps1`).
+
+Both update the project frontmatter (`status: active` on the new one,
+`status: paused` on others) **and** set `ACTIVE_PROJECT` for next session.
+Skills like `statusline`, `/status`, `/handoff`, and `precompact-handoff`
+read this signal so the rest of the pack scopes to the right project
+automatically.
+
+If you already have one vault per project and want to consolidate, the
+mechanical steps are: pick one as the new root, create `10_Projects/<old-slugs>/`
+folders inside it, move each former-vault's `30_Literature/` and
+`80_Attachments/papers/` contents into the unified vault's shared folders,
+update `OBSIDIAN_VAULT_PATH`, and restart Claude.
+
+---
+
 ## 1. Common prerequisites (all three paths)
 
 You need (in addition to path-specific prereqs below):
@@ -363,15 +414,43 @@ pre-flight).
 If you ever need to set env vars by hand:
 
 ```powershell
-PS> setx OBSIDIAN_VAULT_PATH   "C:\Users\<you>\Documents\MyVault"
-PS> setx OBSIDIAN_API_KEY      "<from Obsidian Local REST API plugin>"
-PS> setx PAPER_DOWNLOAD_DIR    "D:\papers"
-PS> setx ARXIV_STORAGE_PATH    "D:\papers\arxiv"
-PS> setx UNPAYWALL_EMAIL       "you@example.org"
+PS> setx OBSIDIAN_VAULT_PATH        "C:\Users\<you>\Documents\MyVault"
+PS> setx OBSIDIAN_API_KEY           "<from Obsidian Local REST API plugin>"
+PS> setx PAPER_DOWNLOAD_DIR         "D:\papers"
+PS> setx ARXIV_STORAGE_PATH         "D:\papers\arxiv"
+PS> setx UNPAYWALL_EMAIL            "you@example.org"
+PS> setx SEMANTIC_SCHOLAR_API_KEY   "<from semanticscholar.org/product/api>"
 ```
 
 `setx` writes to the persistent user environment but does NOT update the
 current PowerShell session. **Open a fresh PowerShell window** afterwards.
+
+#### About `SEMANTIC_SCHOLAR_API_KEY`
+
+**Strongly recommended, not strictly required.** Without a key, the
+Semantic Scholar `paper/search` endpoint is throttled hard enough that it
+fails with `ConnectionRefused` under typical research-pack workloads, which
+silently weakens the citation-discipline gate (the pack falls back to other
+sources for discovery but loses S2 as the primary verifier).
+
+How to get one:
+
+1. Visit https://www.semanticscholar.org/product/api#api-key-form
+2. Fill out the form. The pack uses three endpoint families:
+   `GET /graph/v1/paper/search`,
+   `GET /graph/v1/paper/{paper_id}`,
+   `GET /graph/v1/paper/{paper_id}/{citations,references}`.
+   List those; don't request endpoints you won't use.
+3. Free keys are issued by hand (1-2 business days). Default rate is
+   **1 request/second cumulative across all endpoints** -- the pack is
+   tuned for this budget (see
+   [skills/deep-research/references/iron_rules.md](skills/deep-research/references/iron_rules.md)
+   rule 8 and the `Spawning sub-agents` section in deep-research/SKILL.md).
+4. After `setx`, restart Claude Code from a fresh PowerShell window so the
+   MCP server inherits the new env var.
+
+If your institution provides a higher-rate S2 key, tell the deep-research
+skill so it can lift the parallel-investigator cap for that session.
 
 ---
 
@@ -590,8 +669,9 @@ If you genuinely want to retire old snapshots, do it manually with
 | MCP server spawns with literal `%USERPROFILE%` in the path | B, C | You ran a pre-fix v2 installer that didn't expand placeholders. Re-run `setup.ps1 -Mode Native` (or `-Mode Desktop`) -- the new installer expands `%USERPROFILE%` at install time before writing the config. |
 | MCP servers don't show up in Claude Desktop | C | Was Desktop restarted after `-Mode Desktop`? Check `%APPDATA%\Claude\claude_desktop_config.json` exists and parses (`Get-Content $env:APPDATA\Claude\claude_desktop_config.json \| ConvertFrom-Json`). |
 | Skill import fails in Desktop ("invalid skill bundle") | C | Verify the `.zip` contains `SKILL.md` at its root (not nested in a subfolder). Re-run `prepare-desktop-pack.ps1`. |
-| `/capture-paper` says `(PDF: no)` for everything | A, B | `university-paper-access` can't reach institutional auth. Confirm campus / VPN. Check `UNPAYWALL_EMAIL` is set. Falls back through arXiv -> Sci-Hub but the latter is often blocked. |
-| `claude mcp list` shows `scihub: failed` | A, B | Sci-Hub mirror unreachable. Expected on some networks. Comment the `scihub` block out of your config if you don't want the noise. |
+| `/capture-paper` says `(PDF: no)` for paywalled papers | B | The chrome-devtools-mcp paywall path needs a one-time login. In Claude Code: `Use chrome-devtools to open https://ezproxy.<your-institution>.edu/login`. Sign in via your institutional SSO; cookies persist in `%USERPROFILE%\.claude\chrome-profile\`. Subsequent paywalled fetches work automatically. See [USAGE.md §7](USAGE.md#7-how-do-i-get-paywalled-pdfs-through-my-institutions-subscriptions). |
+| `/capture-paper` reports Cloudflare "Verify you are human" on Wiley / ACS | B | Click the checkbox in the visible Chrome window. The `cf_clearance` cookie covers the next ~30 minutes of same-domain requests. If it keeps re-challenging, verify `navigator.webdriver === false` (the `--disable-blink-features=AutomationControlled` flag in your MCP config got through). See [skills/deep-research/references/paywall_workflow.md](skills/deep-research/references/paywall_workflow.md). |
+| chrome-devtools download appears successful but file isn't in `Downloads\` | B | Chrome's "automatic downloads" rate-limiter blocked the 2nd download from the same loaded page. Always navigate to a different URL (even just the next paper's landing page) before issuing the next fetch. |
 | `setup.sh` fails on `jq` or `rsync` | A | `sudo apt-get install -y jq rsync` and re-run. |
 | `setup.ps1 -Mode Native` fails on `uv` install | B, C | Re-open PowerShell to refresh PATH; uv installs to `%USERPROFILE%\.local\bin`. Or run `irm https://astral.sh/uv/install.ps1 \| iex` manually. |
 | Slow `npm install` on `/mnt/c/...` | A | Move the pack to `~/` (Linux home) and re-run. |
@@ -637,7 +717,8 @@ before any overwrite.
 rm -rf ~/.claude/skills/{deep-research,paper-capture,lit-status,handoff}
 rm -f  ~/.claude/hooks/{precompact-handoff.py,session-start-context.py,stop-persist-todos.py,statusline.sh,paper-mention-detect.py}
 rm -f  ~/.claude/commands/{research.md,capture-paper.md,lit-map.md,status.md,port-to-vault.md}
-rm -rf ~/.claude/mcp-servers/{Sci-Hub-MCP-Server,university-paper-access,obsidian-wrapper.js}
+rm -rf ~/.claude/mcp-servers/obsidian-wrapper.js
+# Older installs may also have ~/.claude/mcp-servers/{Sci-Hub-MCP-Server,university-paper-access} -- remove if present.
 # Then edit ~/.claude.json and ~/.claude/settings.json by hand to remove the pack's mcpServers / hooks blocks.
 ```
 
@@ -658,8 +739,8 @@ PS> Remove-Item -Force $env:USERPROFILE\.claude\commands\research.md, `
                        $env:USERPROFILE\.claude\commands\lit-map.md, `
                        $env:USERPROFILE\.claude\commands\status.md, `
                        $env:USERPROFILE\.claude\commands\port-to-vault.md
-PS> Remove-Item -Recurse -Force $env:USERPROFILE\.claude\mcp-servers\Sci-Hub-MCP-Server, `
-                                  $env:USERPROFILE\.claude\mcp-servers\university-paper-access
+PS> Remove-Item -Recurse -Force $env:USERPROFILE\.claude\chrome-profile -ErrorAction SilentlyContinue
+# Older installs may also have $env:USERPROFILE\.claude\mcp-servers\{Sci-Hub-MCP-Server,university-paper-access} -- remove if present.
 # Then edit %USERPROFILE%\.claude.json and %USERPROFILE%\.claude\settings.json by hand.
 ```
 

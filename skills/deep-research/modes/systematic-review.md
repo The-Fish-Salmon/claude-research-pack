@@ -12,7 +12,7 @@ PRISMA 2020-compliant systematic review. 5,000-15,000 words. Heavyweight -- only
    - Risk-of-bias tool (e.g., RoB 2 for RCTs, ROBINS-I for non-randomized, QUADAS-2 for diagnostic).
    - Synthesis plan (narrative? meta-analysis? if so, model + heterogeneity threshold).
    The user must approve the protocol before phase 2.
-2. **Search & retrieval** -- 3x `investigator.md` in parallel. Use `paper-search` and `semantic-scholar` as primary; `arxiv` only if topic is in scope; `university-paper-access` for full text.
+2. **Search & retrieval** -- 3x `investigator.md` in parallel. Use `paper-search` and `semantic-scholar` as primary; `arxiv` for full text whenever a paper has both an arXiv preprint and a journal version; `chrome-devtools` (via the user's library proxy) for paywalled full text only when no OA copy exists.
 3. **PRISMA flow** -- track at every stage:
    - Records identified (per database)
    - Records after dedup
