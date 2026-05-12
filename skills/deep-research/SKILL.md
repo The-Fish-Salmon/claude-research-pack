@@ -115,14 +115,21 @@ Always prefer **abstract-level reasoning** before downloading PDFs. Only downloa
 
 Use the `Agent` tool with `subagent_type=Explore` for searches and `subagent_type=general-purpose` for synthesis/composition. Cap at 3 parallel agents. Each agent prompt lives in [agents/](agents/) -- load the file with `Read` and pass its body as the agent prompt, prepended with the specific topic.
 
+**Investigator parallelism under a Semantic Scholar rate limit.** The default Semantic Scholar API key budget is 1 request/second cumulative across all endpoints (see [references/iron_rules.md](references/iron_rules.md) rule 8). When S2 is on the investigators' critical path, parallel investigators contend for that 1 RPS bucket and most calls past the first get rate-limited. Default cap is therefore:
+
+- **2 investigators** when S2 is the primary metadata/discovery server.
+- **3 investigators** ONLY when the run is dominated by arXiv / paper-search calls (e.g. a pure CS preprint review), OR when the user has confirmed a higher S2 rate limit for the session.
+
+The scoping agent makes this call in its output: it tags the run as `s2_primary` or `oa_primary` and the spawn count follows.
+
 For a `full` run, the recommended spawn pattern is:
 
-- **Phase 1**: 1x `scoping` agent (sequential).
-- **Phase 2**: 3x `investigator` agents in parallel -- one per top-level subtopic. Each may make several MCP calls.
+- **Phase 1**: 1x `scoping` agent (sequential). Output includes the `s2_primary` / `oa_primary` tag.
+- **Phase 2**: 2-3x `investigator` agents in parallel (count per the rule above), one per top-level subtopic. Each may make several MCP calls. Investigators serialize their S2 calls -- see [agents/investigator.md](agents/investigator.md).
 - **Phase 3**: 1x `synthesizer` + 1x `bias-auditor` in parallel, sharing the Phase 2 output.
 - **Phase 3.5**: 1x `devils-advocate` (checkpoint 1).
 - **Phase 4**: 1x `composer` (sequential, large context).
-- **Phase 5**: 1x `editor` + 1x `ethics` + 1x `devils-advocate` (checkpoint 2 & 3) in parallel.
+- **Phase 5**: 1x `editor` + 1x `ethics` + 1x `devils-advocate` (checkpoint 2 & 3) in parallel. Citation pre-flight runs sequentially after Phase 5 -- it walks every in-text citation through `mcp__semantic-scholar__get_semantic_scholar_paper_details` and the 1 RPS budget bounds its wall-clock time at ~N seconds for N citations.
 
 For `quick`, run scoping -> 1x investigator -> 1x composer -> 1x devils-advocate. Skip bias auditor.
 

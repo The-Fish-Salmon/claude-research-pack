@@ -414,15 +414,43 @@ pre-flight).
 If you ever need to set env vars by hand:
 
 ```powershell
-PS> setx OBSIDIAN_VAULT_PATH   "C:\Users\<you>\Documents\MyVault"
-PS> setx OBSIDIAN_API_KEY      "<from Obsidian Local REST API plugin>"
-PS> setx PAPER_DOWNLOAD_DIR    "D:\papers"
-PS> setx ARXIV_STORAGE_PATH    "D:\papers\arxiv"
-PS> setx UNPAYWALL_EMAIL       "you@example.org"
+PS> setx OBSIDIAN_VAULT_PATH        "C:\Users\<you>\Documents\MyVault"
+PS> setx OBSIDIAN_API_KEY           "<from Obsidian Local REST API plugin>"
+PS> setx PAPER_DOWNLOAD_DIR         "D:\papers"
+PS> setx ARXIV_STORAGE_PATH         "D:\papers\arxiv"
+PS> setx UNPAYWALL_EMAIL            "you@example.org"
+PS> setx SEMANTIC_SCHOLAR_API_KEY   "<from semanticscholar.org/product/api>"
 ```
 
 `setx` writes to the persistent user environment but does NOT update the
 current PowerShell session. **Open a fresh PowerShell window** afterwards.
+
+#### About `SEMANTIC_SCHOLAR_API_KEY`
+
+**Strongly recommended, not strictly required.** Without a key, the
+Semantic Scholar `paper/search` endpoint is throttled hard enough that it
+fails with `ConnectionRefused` under typical research-pack workloads, which
+silently weakens the citation-discipline gate (the pack falls back to other
+sources for discovery but loses S2 as the primary verifier).
+
+How to get one:
+
+1. Visit https://www.semanticscholar.org/product/api#api-key-form
+2. Fill out the form. The pack uses three endpoint families:
+   `GET /graph/v1/paper/search`,
+   `GET /graph/v1/paper/{paper_id}`,
+   `GET /graph/v1/paper/{paper_id}/{citations,references}`.
+   List those; don't request endpoints you won't use.
+3. Free keys are issued by hand (1-2 business days). Default rate is
+   **1 request/second cumulative across all endpoints** -- the pack is
+   tuned for this budget (see
+   [skills/deep-research/references/iron_rules.md](skills/deep-research/references/iron_rules.md)
+   rule 8 and the `Spawning sub-agents` section in deep-research/SKILL.md).
+4. After `setx`, restart Claude Code from a fresh PowerShell window so the
+   MCP server inherits the new env var.
+
+If your institution provides a higher-rate S2 key, tell the deep-research
+skill so it can lift the parallel-investigator cap for that session.
 
 ---
 

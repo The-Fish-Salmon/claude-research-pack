@@ -31,7 +31,16 @@ for source in [arxiv, paper_search, chrome_devtools]:
 return None  # skill writes note with pdf: null
 ```
 
-`pdf_is_valid` = file > 10KB and starts with `%PDF`.
+### `pdf_is_valid`
+
+A file passes ALL of these checks:
+
+1. **Size:** `> 16 KB`. (The known-bad case was a 10.8 KB arXiv HTML 404 page; 16 KB cuts that out while still allowing slim 2-page conference papers.)
+2. **Magic bytes:** the first 8 bytes match `%PDF-1.` (i.e. literal `%PDF-1.0` through `%PDF-1.7`, or `%PDF-2.`).
+3. **No HTML smuggling:** the first 1024 bytes do NOT contain `<!DOCTYPE`, `<html`, `<HTML`, or `<head` (case-sensitive substring check). Some publishers serve auth-error HTML with a `Content-Type: application/pdf` header; the magic-byte check alone is insufficient.
+4. **Trailer present:** the last 1024 bytes contain `%%EOF`. A truncated download (network drop mid-stream) often passes the magic-byte check but fails this one.
+
+All four must pass. If any fails, treat the download as failed: delete the file, log the failure mode (size / magic / html / trailer), continue down the priority chain. Never report success on a failed `pdf_is_valid`.
 
 If chrome-devtools-mcp is unavailable (not configured, or the user hasn't authenticated), the chain stops at paper-search. The skill writes the note with `pdf: null`; the user can drop the PDF in manually with `/ingest-pdf` later.
 
